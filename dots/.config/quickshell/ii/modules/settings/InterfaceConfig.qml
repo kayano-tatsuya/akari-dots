@@ -142,23 +142,6 @@ ContentPage {
     }
 
     ContentSection {
-        icon: "planner_banner_ad_pt"
-        title: Translation.tr("Right Sidebar")
-
-        ConfigSwitch {
-            buttonIcon: "planner_banner_ad_pt"
-            text: Translation.tr("Banner")
-            checked: Config.options.sidebar.banner
-            onCheckedChanged: {
-                Config.options.sidebar.banner = checked;
-            }
-            StyledToolTip {
-                text: Translation.tr("Show a banner card at the top of the right sidebar (wallpaper preview + profile). Click the banner to pick a custom image; right-click to revert to the wallpaper.")
-            }
-        }
-    }
-
-    ContentSection {
         icon: "lock"
         title: Translation.tr("Lock screen")
 
