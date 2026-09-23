@@ -497,6 +497,8 @@ Singleton {
 
             property JsonObject sidebar: JsonObject {
                 property bool keepRightSidebarLoaded: true
+                property bool banner: false // Pctrade-style banner card at the top of the right sidebar
+                property string bannerImage: "" // Custom banner image; empty = use current wallpaper
                 property JsonObject translator: JsonObject {
                     property bool enable: false
                     property int delay: 300 // Delay before sending request. Reduces (potential) rate limits and lag.
@@ -545,6 +547,12 @@ Singleton {
                     property bool showVolume: true
                     property bool showBrightness: true
                 }
+            }
+
+            property JsonObject profile: JsonObject {
+                property string avatarPath: ""
+                property string avatarPicture: ""
+                property string displayName: ""
             }
 
             property JsonObject screenRecord: JsonObject {
