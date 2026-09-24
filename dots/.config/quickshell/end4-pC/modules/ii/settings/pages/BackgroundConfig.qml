@@ -56,6 +56,17 @@ ContentPage {
         }
     }
 
+    Process {
+        id: randomPixivProc
+        property string status: ""
+        command: ["bash", "-c", Quickshell.shellPath("scripts/colors/random/random_pixiv_wall.sh")]
+        stdout: SplitParser {
+            onRead: data => {
+                randomPixivProc.status = data.trim();
+            }
+        }
+    }
+
     ColumnLayout {
         id: mainLayout 
         Layout.fillWidth: true   
@@ -231,6 +242,22 @@ ContentPage {
                     }
                     StyledToolTip {
                         text: Translation.tr("Random SFW Anime wallpaper from Konachan\nImage is saved to ~/Pictures/Wallpapers")
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    Layout.fillWidth: true
+                    enabled: !randomPixivProc.running
+                    visible: Config.options.policies.weeb !== 0
+                    materialIcon: "shuffle"
+                    mainText: randomPixivProc.running
+                        ? Translation.tr("Be patient...")
+                        : Translation.tr("Random: Pixiv")
+                    onClicked: {
+                        randomPixivProc.running = true;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Random SFW wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)")
                     }
                 }
 
