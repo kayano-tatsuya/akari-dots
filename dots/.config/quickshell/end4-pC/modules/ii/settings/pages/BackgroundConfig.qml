@@ -218,6 +218,22 @@ ContentPage {
             GroupedList {
                 Layout.topMargin: -2
 
+                RippleButtonWithIcon {
+                    Layout.fillWidth: true
+                    enabled: !randomWallProc.running
+                    visible: Config.options.policies.weeb !== 0
+                    materialIcon: "shuffle"
+                    mainText: randomWallProc.running
+                        ? Translation.tr("Be patient...")
+                        : Translation.tr("Random: Konachan")
+                    onClicked: {
+                        randomWallProc.running = true;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Random SFW Anime wallpaper from Konachan\nImage is saved to ~/Pictures/Wallpapers")
+                    }
+                }
+
                 ConfigSwitch {
                     id: syncWallpaperSwitch
                     buttonIcon: "sync"
@@ -327,22 +343,7 @@ ContentPage {
                     }
                 }
 
-                RippleButtonWithIcon {
-                    Layout.fillWidth: true
-                    enabled: !randomWallProc.running
-                    visible: Config.options.policies.weeb !== 0
-                    materialIcon: "shuffle"
-                    mainText: randomWallProc.running
-                        ? Translation.tr("Be patient...")
-                        : Translation.tr("Random: Konachan")
-                    onClicked: {
-                        randomWallProc.running = true;
-                    }
-                    StyledToolTip {
-                        text: Translation.tr("Random SFW Anime wallpaper from Konachan\nImage is saved to ~/Pictures/Wallpapers")
-                    }
                 }
-            }
 
             Connections {
                 target: Config.options.background
