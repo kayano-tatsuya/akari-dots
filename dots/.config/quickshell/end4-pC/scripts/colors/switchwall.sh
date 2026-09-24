@@ -157,6 +157,47 @@ set_thumbnail_path() {
     fi
 }
 
+# Percent-encode a path for use in a file:// URI (keeps slashes), matching
+# quickshell's ThumbnailImage / generate-thumbnails-magick.sh hashing.
+thumbnail_urlencode() {
+    local str="$1"
+    local encoded=""
+    local c
+    for ((i=0; i<${#str}; i++)); do
+        c="${str:$i:1}"
+        case "$c" in
+            [a-zA-Z0-9.~_-]|/|'('|')'|'*') encoded+="$c" ;;
+            *) printf -v hex '%%%02X' "'${c}'"; encoded+="$hex" ;;
+        esac
+    done
+    echo "$encoded"
+}
+
+# Freedesktop thumbnails are keyed by file path, so when a wallpaper file is
+# overwritten in place (e.g. random_konachan_wall.sh reusing fixed names) the
+# old thumbnail would linger. Purge and regenerate all sizes right after the
+# wallpaper path is written so previews are never stale.
+refresh_image_thumbnails() {
+    local img="$1"
+    [ -f "$img" ] || return 0
+    case "${img,,}" in
+        *.gif|*.mp4|*.webm|*.mkv|*.avi|*.mov) return 0 ;;
+    esac
+    local abs encoded uri hash size size_name size_px out
+    abs="$(realpath "$img")"
+    encoded="$(thumbnail_urlencode "$abs")"
+    uri="file://$encoded"
+    hash="$(echo -n "$uri" | md5sum | awk '{print $1}')"
+    for size in normal:128 large:256 x-large:512 xx-large:1024; do
+        size_name="${size%%:*}"
+        size_px="${size##*:}"
+        out="$HOME/.cache/thumbnails/$size_name/$hash.png"
+        rm -f "$out"
+        mkdir -p "$(dirname "$out")"
+        magick "$abs" -resize "${size_px}x${size_px}" "$out"
+    done
+}
+
 categorize_wallpaper() {
     img_cat=$("$SCRIPT_DIR/../ai/gemini-categorize-wallpaper.sh" "$1")
     echo "$img_cat" > "$STATE_DIR/user/generated/wallpaper/category.txt"
@@ -264,6 +305,7 @@ switch() {
             generate_colors_material_args=(--path "$imgpath")
             if [[ -z "$colors_only_flag" ]]; then
                 set_wallpaper_path "$imgpath"
+                refresh_image_thumbnails "$imgpath"
                 remove_restore
             fi
         fi
