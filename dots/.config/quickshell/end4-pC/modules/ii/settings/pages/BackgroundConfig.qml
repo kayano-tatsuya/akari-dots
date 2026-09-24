@@ -301,6 +301,18 @@ ContentPage {
 
                 RippleButtonWithIcon {
                     Layout.fillWidth: true
+                    materialIcon: "save"
+                    mainText: Translation.tr("Save wallpaper")
+                    onClicked: {
+                        page.openSaveWallpaperDialog();
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Saves the current wallpaper to ~/Pictures/Wallpapers/SAVED (NO OVERRIDES)\nNever overwrites - safe from the Random buttons")
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    Layout.fillWidth: true
                     enabled: !randomWallProc.running
                     visible: Config.options.policies.weeb !== 0
                     materialIcon: "shuffle"
@@ -342,45 +354,78 @@ ContentPage {
                             font.pixelSize: Appearance.font.pixelSize.small
                             color: Appearance.colors.colOnSecondaryContainer
                         }
-                        StyledSwitch {
-                            id: pixivTagSwitch
-                            checked: page.pixivWallpaperTag
-                            onCheckedChanged: {
-                                if (!page.pixivWallpaperTagLoaded) return;
-                                if (checked) {
-                                    pixivTagOnProc.running = true;
-                                } else {
-                                    pixivTagOffProc.running = true;
-                                }
-                            }
-                        }
-                        StyledSwitch {
-                            id: pixivNsfwSwitch
-                            checked: page.pixivNsfw
-                            onCheckedChanged: {
-                                if (!page.pixivNsfwLoaded) return;
-                                if (checked) {
-                                    pixivNsfwOnProc.running = true;
-                                } else {
-                                    pixivNsfwOffProc.running = true;
-                                }
-                            }
-                        }
                     }
                     StyledToolTip {
-                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)\nRight switches: wallpaper-tag only (壁紙), allow R-18")
+                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)")
                     }
                 }
 
-                RippleButtonWithIcon {
+                Rectangle {
                     Layout.fillWidth: true
-                    materialIcon: "save"
-                    mainText: Translation.tr("Save wallpaper")
-                    onClicked: {
-                        page.openSaveWallpaperDialog();
-                    }
-                    StyledToolTip {
-                        text: Translation.tr("Saves the current wallpaper to ~/Pictures/Wallpapers/SAVED (NO OVERRIDES)\nNever overwrites - safe from the Random buttons")
+                    visible: Config.options.policies.weeb !== 0
+                    implicitHeight: pixivTogglesLayout.implicitHeight + 10
+                    radius: Appearance.rounding.small
+                    color: Appearance.colors.colLayer2
+
+                    ColumnLayout {
+                        id: pixivTogglesLayout
+                        anchors.fill: parent
+                        anchors.margins: 5
+                        spacing: 4
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            MaterialSymbol {
+                                text: "wallpaper"
+                                iconSize: Appearance.font.pixelSize.larger
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Translation.tr("Pixiv wallpaper tag (壁紙)")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+                            StyledSwitch {
+                                id: pixivTagSwitch
+                                checked: page.pixivWallpaperTag
+                                onCheckedChanged: {
+                                    if (!page.pixivWallpaperTagLoaded) return;
+                                    if (checked) {
+                                        pixivTagOnProc.running = true;
+                                    } else {
+                                        pixivTagOffProc.running = true;
+                                    }
+                                }
+                            }
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            MaterialSymbol {
+                                text: "explicit"
+                                iconSize: Appearance.font.pixelSize.larger
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: Translation.tr("Allow R-18")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colOnSecondaryContainer
+                            }
+                            StyledSwitch {
+                                id: pixivNsfwSwitch
+                                checked: page.pixivNsfw
+                                onCheckedChanged: {
+                                    if (!page.pixivNsfwLoaded) return;
+                                    if (checked) {
+                                        pixivNsfwOnProc.running = true;
+                                    } else {
+                                        pixivNsfwOffProc.running = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
