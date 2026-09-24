@@ -403,7 +403,7 @@ ContentPage {
                             Layout.fillWidth: true
                             spacing: 8
                             MaterialSymbol {
-                                text: "explicit"
+                                text: "18_up_rating"
                                 iconSize: Appearance.font.pixelSize.larger
                                 color: Appearance.colors.colOnSecondaryContainer
                             }
