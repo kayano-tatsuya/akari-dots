@@ -14,6 +14,8 @@ ContentPage {
     id: page
     forceWidth: true
     property bool showSaveWallpaperDialog: false
+    property bool pixivNsfw: false
+    property bool pixivNsfwLoaded: false
 
     function goTo(term) {
         const t = term.toLowerCase().trim()
@@ -67,6 +69,29 @@ ContentPage {
             }
         }
     }
+
+    Process {
+        id: pixivNsfwOnProc
+        command: ["bash", Quickshell.shellPath("scripts/colors/random/pixiv_nsfw.sh"), "on"]
+    }
+
+    Process {
+        id: pixivNsfwOffProc
+        command: ["bash", Quickshell.shellPath("scripts/colors/random/pixiv_nsfw.sh"), "off"]
+    }
+
+    Process {
+        id: pixivNsfwProbe
+        command: ["bash", Quickshell.shellPath("scripts/colors/random/pixiv_nsfw.sh"), "status"]
+        stdout: SplitParser {
+            onRead: data => {
+                page.pixivNsfw = data.trim() === "1";
+                page.pixivNsfwLoaded = true;
+            }
+        }
+    }
+
+    Component.onCompleted: pixivNsfwProbe.running = true
 
     ColumnLayout {
         id: mainLayout 
@@ -246,19 +271,48 @@ ContentPage {
                     }
                 }
 
-                RippleButtonWithIcon {
+                RippleButton {
                     Layout.fillWidth: true
                     enabled: !randomPixivProc.running
                     visible: Config.options.policies.weeb !== 0
-                    materialIcon: "shuffle"
-                    mainText: randomPixivProc.running
-                        ? Translation.tr("Be patient...")
-                        : Translation.tr("Random: Pixiv")
+                    implicitHeight: 35
+                    horizontalPadding: 10
+                    buttonRadius: Appearance.rounding.small
+                    colBackground: Appearance.colors.colLayer2
                     onClicked: {
                         randomPixivProc.running = true;
                     }
+                    contentItem: RowLayout {
+                        spacing: 8
+                        MaterialSymbol {
+                            text: "shuffle"
+                            iconSize: Appearance.font.pixelSize.larger
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+                        StyledText {
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            text: randomPixivProc.running
+                                ? Translation.tr("Be patient...")
+                                : Translation.tr("Random: Pixiv")
+                            font.pixelSize: Appearance.font.pixelSize.small
+                            color: Appearance.colors.colOnSecondaryContainer
+                        }
+                        StyledSwitch {
+                            id: pixivNsfwSwitch
+                            checked: page.pixivNsfw
+                            onCheckedChanged: {
+                                if (!page.pixivNsfwLoaded) return;
+                                if (checked) {
+                                    pixivNsfwOnProc.running = true;
+                                } else {
+                                    pixivNsfwOffProc.running = true;
+                                }
+                            }
+                        }
+                    }
                     StyledToolTip {
-                        text: Translation.tr("Random SFW wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)")
+                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)\nUse the switch on the right to allow R-18")
                     }
                 }
 
@@ -1520,9 +1574,36 @@ ContentPage {
         }
     }
 
-    SaveWallpaperDialog {
+    ToggleDialog {
+        shownPropertyString: "showSaveWallpaperDialog"
+        dialog: SaveWallpaperDialog {}
+    }
+
+    component ToggleDialog: Loader {
+        id: toggleDialogLoader
+        required property string shownPropertyString
+        property alias dialog: toggleDialogLoader.sourceComponent
+        readonly property bool shown: page[shownPropertyString]
         anchors.fill: parent
-        show: page.showSaveWallpaperDialog
-        onDismiss: page.showSaveWallpaperDialog = false
+
+        onShownChanged: if (shown) toggleDialogLoader.active = true;
+        active: shown
+        onActiveChanged: {
+            if (active) {
+                item.show = true;
+                item.forceActiveFocus();
+            }
+        }
+        Connections {
+            target: toggleDialogLoader.item
+            function onDismiss() {
+                toggleDialogLoader.item.show = false
+                page[toggleDialogLoader.shownPropertyString] = false;
+            }
+            function onVisibleChanged() {
+                if (toggleDialogLoader.item && !toggleDialogLoader.item.visible && !page[toggleDialogLoader.shownPropertyString])
+                    toggleDialogLoader.active = false;
+            }
+        }
     }
 }

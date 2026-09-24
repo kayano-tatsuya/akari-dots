@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Random SFW wallpaper from Pixiv (mirrors random_konachan_wall.sh).
+# Random wallpaper from Pixiv (mirrors random_konachan_wall.sh).
 #
 # Pixiv requires an account. You need a "refresh token" once; after that this
 # script runs fully automatically.
@@ -20,9 +20,15 @@
 #   PIXIV_MIN_HEIGHT=1200           #   "Upscale?" prompt from switchwall)
 #   PIXIV_ORIENTATION="landscape"   # landscape | portrait | square (empty = any)
 #   PIXIV_NO_AI="true"              # skip AI-generated works
+#   PIXIV_ALLOW_NSFW="true"         # allow R-18 (default: SFW only)
 #
-# SFW only: images with x_restrict == 0 (no R-18).
-# Image is saved to ~/Pictures/Wallpapers and applied via switchwall.sh.
+# SFW by default (x_restrict == 0, sanity_level != 6). With
+# PIXIV_ALLOW_NSFW="true" the R-18 filter is removed and the API is queried
+# with filter=for_android so R-18 works actually come back in the results.
+# Note: the recommended feed is SFW-only even then, so a no-tags NSFW pick
+# falls back to the R-18 daily ranking (random page). Tag searches include
+# R-18 directly. Image is saved to ~/Pictures/Wallpapers and applied via
+# switchwall.sh.
 
 get_pictures_dir() {
     if command -v xdg-user-dir &> /dev/null; then
@@ -69,8 +75,13 @@ PIXIV_MIN_WIDTH=""
 PIXIV_MIN_HEIGHT=""
 PIXIV_ORIENTATION=""
 PIXIV_NO_AI="false"
+PIXIV_ALLOW_NSFW="false"
 PIXIV_CONFIG="$XDG_CONFIG_HOME/pixiv/config"
 [ -f "$PIXIV_CONFIG" ] && . "$PIXIV_CONFIG"
+
+# for_ios excludes R-18 from the API results, for_android includes it.
+PIXIV_FILTER="for_ios"
+[ "${PIXIV_ALLOW_NSFW:-false}" = "true" ] && PIXIV_FILTER="for_android"
 
 # --- Refresh token: PIXIV_REFRESH_TOKEN env var, or saved by pixiv-auth.py ---
 TOKEN_FILE="$XDG_CONFIG_HOME/pixiv/refresh-token"
@@ -100,6 +111,7 @@ if [ -z "$accessToken" ]; then
 fi
 
 # 2) Fetch candidates: tag search, or the recommended feed when no tags given
+echo "[pixiv] safety: $([ "${PIXIV_ALLOW_NSFW:-false}" = "true" ] && echo nsfw || echo sfw)" >&2
 if [ -n "$PIXIV_TAGS" ]; then
     offset=$((RANDOM % 450))
     echo "[pixiv] searching: $PIXIV_TAGS (sort=$PIXIV_SORT)" >&2
@@ -107,19 +119,33 @@ if [ -n "$PIXIV_TAGS" ]; then
         --data-urlencode "word=$PIXIV_TAGS" \
         -d "search_target=partial_match_for_tags" \
         -d "sort=$PIXIV_SORT" \
-        -d "filter=for_ios" \
+        -d "filter=$PIXIV_FILTER" \
+        -d "offset=$offset" \
+        -H "Authorization: Bearer $accessToken" \
+        -H "User-Agent: $USER_AGENT")
+elif [ "${PIXIV_ALLOW_NSFW:-false}" = "true" ]; then
+    # The recommended feed is SFW-only even with filter=for_android, so use
+    # the R-18 daily ranking for a random NSFW pick when no tags are given.
+    offset=$(( (RANDOM % 2) * 50 + 1 ))
+    echo "[pixiv] R-18 daily ranking (offset=$offset)" >&2
+    resp=$(curl -s -G "$PIXIV_API/illust/ranking" \
+        -d "mode=day_r18" \
+        -d "filter=$PIXIV_FILTER" \
         -d "offset=$offset" \
         -H "Authorization: Bearer $accessToken" \
         -H "User-Agent: $USER_AGENT")
 else
     echo "[pixiv] recommended feed" >&2
-    resp=$(curl -s "$PIXIV_API/illust/recommended?content_type=illust&filter=for_ios" \
+    resp=$(curl -s "$PIXIV_API/illust/recommended?content_type=illust&filter=$PIXIV_FILTER" \
         -H "Authorization: Bearer $accessToken" \
         -H "User-Agent: $USER_AGENT")
 fi
 
-# 3) Pick one at random (SFW only + optional filters)
-jqFilter='.illusts[] | select(.type == "illust" and .x_restrict == 0 and .sanity_level != 6'
+# 3) Pick one at random (optional filters; SFW enforcement unless NSFW allowed)
+jqFilter='.illusts[] | select(.type == "illust"'
+if [ "${PIXIV_ALLOW_NSFW:-false}" != "true" ]; then
+    jqFilter="$jqFilter and .x_restrict == 0 and .sanity_level != 6"
+fi
 if [ -n "$PIXIV_MIN_BOOKMARKS" ] && [ "$PIXIV_MIN_BOOKMARKS" -gt 0 ] 2>/dev/null; then
     jqFilter="$jqFilter and .total_bookmarks >= $PIXIV_MIN_BOOKMARKS"
 fi
@@ -144,7 +170,7 @@ jqFilter="$jqFilter) | (.meta_single_page.original_image_url // (.meta_pages[0].
 url=$(echo "$resp" | jq -r "$jqFilter" | sed '/^$/d' | shuf -n 1)
 
 if [ -z "$url" ]; then
-    echo "error: no usable SFW Pixiv illust found (try different tags/filters)"
+    echo "error: no usable Pixiv illust found (try different tags/filters)"
     exit 1
 fi
 
