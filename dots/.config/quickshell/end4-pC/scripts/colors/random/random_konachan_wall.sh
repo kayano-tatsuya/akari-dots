@@ -34,10 +34,33 @@ userAgent=$(jq -r '.networking.userAgent // empty' "$illogicalImpulseConfigPath"
 response=$(curl -A "$userAgent" "https://konachan.net/post.json?tags=rating%3Asafe&limit=1&page=$page")
 link=$(echo "$response" | jq '.[0].file_url' -r);
 ext=$(echo "$link" | awk -F. '{print $NF}')
-downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper.$ext"
-currentWallpaperPath=$(jq -r '.background.wallpaperPath' "$illogicalImpulseConfigPath")
-if [ "$downloadPath" == "$currentWallpaperPath" ]; then
-    downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper-1.$ext"
-fi
+# Unique filename each pull so the preview above the random buttons stays
+# fresh (in-place overwrites keep stale thumbnails, which are keyed by path).
+prune_old_wallpapers() {
+    local current lock
+    current=$(jq -r '.background.wallpaperPath // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
+    lock=$(jq -r '.background.lockWall // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
+    local f k skip
+    for f in "$PICTURES_DIR"/Wallpapers/random_wallpaper_konachan_*; do
+        [ -f "$f" ] || continue
+        skip=0
+        for k in "$current" "$lock"; do
+            [ "$f" == "$k" ] && skip=1
+        done
+        [ "$skip" -eq 0 ] && rm -f "$f"
+    done
+}
+
+downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_konachan_$(date +%s).$ext"
 curl -A "$userAgent" "$link" -o "$downloadPath"
+
+if [ ! -s "$downloadPath" ]; then
+    echo "error: konachan download failed"
+    exit 1
+fi
+
 "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+
+# Keep the folder tidy: drop older random konachan pulls (never the current
+# or lock wallpaper).
+prune_old_wallpapers

@@ -21,14 +21,22 @@
 #   PIXIV_ORIENTATION="landscape"   # landscape | portrait | square (empty = any)
 #   PIXIV_NO_AI="true"              # skip AI-generated works
 #   PIXIV_ALLOW_NSFW="true"         # allow R-18 (default: SFW only)
+#   PIXIV_WALLPAPER_TAG="true"      # restrict pulls to works tagged as
+#   PIXIV_WALLPAPER_TAG_VALUE="壁紙" #   wallpapers (default tag: 壁紙)
+#                                  # (see the wallpaper-tag switch in settings)
 #
 # SFW by default (x_restrict == 0, sanity_level != 6). With
 # PIXIV_ALLOW_NSFW="true" the R-18 filter is removed and the API is queried
 # with filter=for_android so R-18 works actually come back in the results.
 # Note: the recommended feed is SFW-only even then, so a no-tags NSFW pick
-# falls back to the R-18 daily ranking (random page). Tag searches include
-# R-18 directly. Image is saved to ~/Pictures/Wallpapers and applied via
-# switchwall.sh.
+# falls back to a random R-18 ranking (day/week/male/female). Tag
+# searches include R-18 directly.
+# Each pick is saved to a unique file
+# (~/Pictures/Wallpapers/random_wallpaper_pixiv_<ts>.<ext>), avoids re-picking
+# recently used illusts (ids kept in
+# $XDG_STATE_HOME/quickshell/pixiv-recent-ids), and is applied via
+# switchwall.sh. Older random pixiv pulls are pruned automatically (the
+# current and lock wallpapers are kept).
 
 get_pictures_dir() {
     if command -v xdg-user-dir &> /dev/null; then
@@ -59,6 +67,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 illogicalImpulseConfigPath="$HOME/.config/illogical-impulse/config.json"
 
+# State file: illust ids picked recently, so consecutive pulls skip them and
+# don't keep re-downloading the same works a few clicks later.
+PIXIV_RECENT_FILE="$STATE_DIR/pixiv-recent-ids"
+mkdir -p "$STATE_DIR"
+
 # --- Pixiv constants (same public app credentials as pixiv-auth.py) ---
 PIXIV_OAUTH="https://oauth.secure.pixiv.net/auth/token"
 PIXIV_API="https://app-api.pixiv.net/v1"
@@ -76,6 +89,8 @@ PIXIV_MIN_HEIGHT=""
 PIXIV_ORIENTATION=""
 PIXIV_NO_AI="false"
 PIXIV_ALLOW_NSFW="false"
+PIXIV_WALLPAPER_TAG="false"
+PIXIV_WALLPAPER_TAG_VALUE="壁紙"
 PIXIV_CONFIG="$XDG_CONFIG_HOME/pixiv/config"
 [ -f "$PIXIV_CONFIG" ] && . "$PIXIV_CONFIG"
 
@@ -111,12 +126,20 @@ if [ -z "$accessToken" ]; then
 fi
 
 # 2) Fetch candidates: tag search, or the recommended feed when no tags given
+#    When the wallpaper-tag toggle is on, add the wallpaper tag to any user
+#    tags (or use just that tag), so pulls favor wallpaper-oriented works.
+search_tags="$PIXIV_TAGS"
+if [ "${PIXIV_WALLPAPER_TAG:-false}" = "true" ]; then
+    search_tags="${search_tags:+$search_tags }${PIXIV_WALLPAPER_TAG_VALUE:-壁紙}"
+    echo "[pixiv] wallpaper tag: ${PIXIV_WALLPAPER_TAG_VALUE:-壁紙}" >&2
+fi
+
 echo "[pixiv] safety: $([ "${PIXIV_ALLOW_NSFW:-false}" = "true" ] && echo nsfw || echo sfw)" >&2
-if [ -n "$PIXIV_TAGS" ]; then
+if [ -n "$search_tags" ]; then
     offset=$((RANDOM % 450))
-    echo "[pixiv] searching: $PIXIV_TAGS (sort=$PIXIV_SORT)" >&2
+    echo "[pixiv] searching: $search_tags (sort=$PIXIV_SORT)" >&2
     resp=$(curl -s -G "$PIXIV_API/search/illust" \
-        --data-urlencode "word=$PIXIV_TAGS" \
+        --data-urlencode "word=$search_tags" \
         -d "search_target=partial_match_for_tags" \
         -d "sort=$PIXIV_SORT" \
         -d "filter=$PIXIV_FILTER" \
@@ -125,15 +148,23 @@ if [ -n "$PIXIV_TAGS" ]; then
         -H "User-Agent: $USER_AGENT")
 elif [ "${PIXIV_ALLOW_NSFW:-false}" = "true" ]; then
     # The recommended feed is SFW-only even with filter=for_android, so use
-    # the R-18 daily ranking for a random NSFW pick when no tags are given.
-    offset=$(( (RANDOM % 2) * 50 + 1 ))
-    echo "[pixiv] R-18 daily ranking (offset=$offset)" >&2
-    resp=$(curl -s -G "$PIXIV_API/illust/ranking" \
-        -d "mode=day_r18" \
-        -d "filter=$PIXIV_FILTER" \
-        -d "offset=$offset" \
-        -H "Authorization: Bearer $accessToken" \
-        -H "User-Agent: $USER_AGENT")
+    # R-18 rankings for a random NSFW pick when no tags are given. Randomize
+    # the ranking mode (daily/weekly/male/female) so the pool is not just
+    # today's top page, and retry a couple of times if a page comes back empty.
+    r18Modes=(day_r18 week_r18 day_male_r18 day_female_r18)
+    for _ in 1 2; do
+        mode=${r18Modes[$((RANDOM % ${#r18Modes[@]}))]}
+        offset=$(( (RANDOM % 2) * 50 + 1 ))
+        resp=$(curl -s -G "$PIXIV_API/illust/ranking" \
+            -d "mode=$mode" \
+            -d "filter=$PIXIV_FILTER" \
+            -d "offset=$offset" \
+            -H "Authorization: Bearer $accessToken" \
+            -H "User-Agent: $USER_AGENT")
+        echo "[pixiv] R-18 ranking: $mode (offset=$offset)" >&2
+        n=$(echo "$resp" | jq '.illusts | length // 0' 2>/dev/null)
+        [ "${n:-0}" -gt 0 ] && break
+    done
 else
     echo "[pixiv] recommended feed" >&2
     resp=$(curl -s "$PIXIV_API/illust/recommended?content_type=illust&filter=$PIXIV_FILTER" \
@@ -141,7 +172,12 @@ else
         -H "User-Agent: $USER_AGENT")
 fi
 
-# 3) Pick one at random (optional filters; SFW enforcement unless NSFW allowed)
+# 3) Pick one at random (optional filters; SFW enforcement unless NSFW allowed).
+#    Skip illusts picked recently and emit "id<TAB>url" so the pick can be
+#    recorded for the next run.
+usedJson=$(jq -sR 'split("\n") | map(select(length > 0))' "$PIXIV_RECENT_FILE" 2>/dev/null)
+[ -z "$usedJson" ] && usedJson="[]"
+
 jqFilter='.illusts[] | select(.type == "illust"'
 if [ "${PIXIV_ALLOW_NSFW:-false}" != "true" ]; then
     jqFilter="$jqFilter and .x_restrict == 0 and .sanity_level != 6"
@@ -165,27 +201,60 @@ fi
 if [ "${PIXIV_NO_AI:-false}" = "true" ]; then
     jqFilter="$jqFilter and ((.ai_type // \"1\") != \"2\")"
 fi
-jqFilter="$jqFilter) | (.meta_single_page.original_image_url // (.meta_pages[0].image_urls.original // .meta_pages[0].image_urls.large) // .image_urls.large // empty)"
+jqFilter="$jqFilter and ((.id | tostring) | IN(\$used[]) | not)"
+jqFilter="$jqFilter) | [(.id | tostring), (.meta_single_page.original_image_url // (.meta_pages[0].image_urls.original // .meta_pages[0].image_urls.large) // .image_urls.large // empty)] | @tsv"
 
-url=$(echo "$resp" | jq -r "$jqFilter" | sed '/^$/d' | shuf -n 1)
-
+line=$(echo "$resp" | jq -r --argjson used "$usedJson" "$jqFilter" | sed '/^[[:space:]]*$/d' | shuf -n 1)
+if [ -z "$line" ]; then
+    echo "error: no usable Pixiv illust found (try different tags/filters)"
+    exit 1
+fi
+id=$(echo "$line" | cut -f1)
+url=$(echo "$line" | cut -f2)
 if [ -z "$url" ]; then
     echo "error: no usable Pixiv illust found (try different tags/filters)"
     exit 1
 fi
 
-# 4) Download (Pixiv images need the Referer header)
+# 4) Download (Pixiv images need the Referer header). Save to a unique
+#    filename so the preview above the random buttons gets a fresh thumbnail
+#    (in-place overwrites keep stale previews because thumbnails are keyed by
+#    the file path).
+prune_old_wallpapers() {
+    local current lock
+    current=$(jq -r '.background.wallpaperPath // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
+    lock=$(jq -r '.background.lockWall // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
+    local f k skip
+    for f in "$PICTURES_DIR"/Wallpapers/random_wallpaper_pixiv_*; do
+        [ -f "$f" ] || continue
+        skip=0
+        for k in "$current" "$lock"; do
+            [ "$f" == "$k" ] && skip=1
+        done
+        [ "$skip" -eq 0 ] && rm -f "$f"
+    done
+}
+
 mkdir -p "$PICTURES_DIR/Wallpapers"
 ext=$(echo "$url" | awk -F. '{print $NF}' | tr -d '\r')
-downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_pixiv.$ext"
-currentWallpaperPath=$(jq -r '.background.wallpaperPath' "$illogicalImpulseConfigPath")
-if [ "$downloadPath" == "$currentWallpaperPath" ]; then
-    downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_pixiv-1.$ext"
-fi
+downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_pixiv_$(date +%s).$ext"
 curl -s -L "$url" \
     -H "Referer: $REFERER" \
     -H "User-Agent: $USER_AGENT" \
     -o "$downloadPath"
 
+if [ ! -s "$downloadPath" ]; then
+    echo "error: download failed for $url"
+    exit 1
+fi
+
+# Remember this pick so future pulls avoid an immediate repeat (~20 ids).
+{ echo "$id"; head -n 19 "$PIXIV_RECENT_FILE" 2>/dev/null || true; } > "$PIXIV_RECENT_FILE.tmp" \
+    && mv "$PIXIV_RECENT_FILE.tmp" "$PIXIV_RECENT_FILE"
+
 # 5) Apply
 "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+
+# 6) Keep ~/Pictures/Wallpapers tidy: drop older random pixiv pulls (never the
+#    currently applied wallpaper or the lock wallpaper).
+prune_old_wallpapers

@@ -34,11 +34,34 @@ images=$(echo "$response" | jq '.backgrounds | length' -r);
 randomIndex=$((RANDOM % images));
 link=$(echo "$response" | jq ".backgrounds[$randomIndex].url" -r)
 ext=$(echo "$link" | awk -F. '{print $NF}')
-downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper.$ext"
+# Unique filename each pull so the preview above the random buttons stays
+# fresh (in-place overwrites keep stale thumbnails, which are keyed by path).
 illogicalImpulseConfigPath="$HOME/.config/illogical-impulse/config.json"
-currentWallpaperPath=$(jq -r '.background.wallpaperPath' $illogicalImpulseConfigPath)
-if [ "$downloadPath" == "$currentWallpaperPath" ]; then
-    downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper-1.$ext"
-fi
+downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_osu_$(date +%s).$ext"
 curl "$link" -o "$downloadPath"
+
+if [ ! -s "$downloadPath" ]; then
+    echo "error: osu download failed"
+    exit 1
+fi
+
 "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+
+# Keep the folder tidy: drop older random osu pulls (never the current or
+# lock wallpaper).
+prune_old_wallpapers() {
+    local current lock
+    current=$(jq -r '.background.wallpaperPath // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
+    lock=$(jq -r '.background.lockWall // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
+    local f k skip
+    for f in "$PICTURES_DIR"/Wallpapers/random_wallpaper_osu_*; do
+        [ -f "$f" ] || continue
+        skip=0
+        for k in "$current" "$lock"; do
+            [ "$f" == "$k" ] && skip=1
+        done
+        [ "$skip" -eq 0 ] && rm -f "$f"
+    done
+}
+
+prune_old_wallpapers

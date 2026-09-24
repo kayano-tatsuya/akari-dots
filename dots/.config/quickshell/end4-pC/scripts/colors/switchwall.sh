@@ -304,8 +304,10 @@ switch() {
             matugen_args+=(image "$imgpath")
             generate_colors_material_args=(--path "$imgpath")
             if [[ -z "$colors_only_flag" ]]; then
-                set_wallpaper_path "$imgpath"
+                # Generate thumbnails first so previews (keyed by path hash)
+                # can load the new image the moment the path is published.
                 refresh_image_thumbnails "$imgpath"
+                set_wallpaper_path "$imgpath"
                 remove_restore
             fi
         fi

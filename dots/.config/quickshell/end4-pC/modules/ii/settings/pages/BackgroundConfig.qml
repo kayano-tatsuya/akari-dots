@@ -17,6 +17,8 @@ ContentPage {
     property var saveWallpaperDialogLoader: null
     property bool pixivNsfw: false
     property bool pixivNsfwLoaded: false
+    property bool pixivWallpaperTag: false
+    property bool pixivWallpaperTagLoaded: false
 
     property Component saveWallpaperDialogComponent: Component {
         ToggleDialog {
@@ -109,7 +111,31 @@ ContentPage {
         }
     }
 
-    Component.onCompleted: pixivNsfwProbe.running = true
+    Process {
+        id: pixivTagOnProc
+        command: ["bash", Quickshell.shellPath("scripts/colors/random/pixiv_tag.sh"), "on"]
+    }
+
+    Process {
+        id: pixivTagOffProc
+        command: ["bash", Quickshell.shellPath("scripts/colors/random/pixiv_tag.sh"), "off"]
+    }
+
+    Process {
+        id: pixivTagProbe
+        command: ["bash", Quickshell.shellPath("scripts/colors/random/pixiv_tag.sh"), "status"]
+        stdout: SplitParser {
+            onRead: data => {
+                page.pixivWallpaperTag = data.trim() === "1";
+                page.pixivWallpaperTagLoaded = true;
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        pixivNsfwProbe.running = true;
+        pixivTagProbe.running = true;
+    }
 
     ColumnLayout {
         id: mainLayout 
@@ -317,6 +343,18 @@ ContentPage {
                             color: Appearance.colors.colOnSecondaryContainer
                         }
                         StyledSwitch {
+                            id: pixivTagSwitch
+                            checked: page.pixivWallpaperTag
+                            onCheckedChanged: {
+                                if (!page.pixivWallpaperTagLoaded) return;
+                                if (checked) {
+                                    pixivTagOnProc.running = true;
+                                } else {
+                                    pixivTagOffProc.running = true;
+                                }
+                            }
+                        }
+                        StyledSwitch {
                             id: pixivNsfwSwitch
                             checked: page.pixivNsfw
                             onCheckedChanged: {
@@ -330,7 +368,7 @@ ContentPage {
                         }
                     }
                     StyledToolTip {
-                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)\nUse the switch on the right to allow R-18")
+                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)\nRight switches: wallpaper-tag only (壁紙), allow R-18")
                     }
                 }
 
