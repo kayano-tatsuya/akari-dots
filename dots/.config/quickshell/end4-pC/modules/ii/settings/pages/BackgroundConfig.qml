@@ -13,6 +13,7 @@ import Quickshell.Io
 ContentPage {
     id: page
     forceWidth: true
+    property bool showSaveWallpaperDialog: false
 
     function goTo(term) {
         const t = term.toLowerCase().trim()
@@ -258,6 +259,18 @@ ContentPage {
                     }
                     StyledToolTip {
                         text: Translation.tr("Random SFW wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)")
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    Layout.fillWidth: true
+                    materialIcon: "save"
+                    mainText: Translation.tr("Save wallpaper")
+                    onClicked: {
+                        page.showSaveWallpaperDialog = true;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Saves the current wallpaper to ~/Pictures/Wallpapers/SAVED (NO OVERRIDES)\nNever overwrites - safe from the Random buttons")
                     }
                 }
 
@@ -1505,5 +1518,11 @@ ContentPage {
                 }
             }
         }
+    }
+
+    SaveWallpaperDialog {
+        anchors.fill: parent
+        show: page.showSaveWallpaperDialog
+        onDismiss: page.showSaveWallpaperDialog = false
     }
 }

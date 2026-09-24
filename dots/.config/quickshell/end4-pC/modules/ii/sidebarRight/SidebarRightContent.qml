@@ -32,6 +32,7 @@ Item {
     property bool showWifiDialog: false
     property bool editMode: false
     property bool showIconPickerDialog: false
+    property bool showSaveWallpaperDialog: false
 
     readonly property bool animatedEntrance: WM.compositor !== "hyprland"
     readonly property bool sidebarOpen: GlobalStates.sidebarRightOpen
@@ -93,6 +94,7 @@ Item {
                 root.showBluetoothDialog = false;
                 root.showAudioOutputDialog = false;
                 root.showAudioInputDialog = false;
+                root.showSaveWallpaperDialog = false;
             }
         }
     }
@@ -322,6 +324,19 @@ Item {
                 }
             }
 
+            RippleButtonWithIcon {
+                Layout.fillWidth: true
+                Layout.topMargin: -6
+                materialIcon: "save"
+                mainText: Translation.tr("Save wallpaper")
+                onClicked: {
+                    root.showSaveWallpaperDialog = true;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Saves the current wallpaper to ~/Pictures/Wallpapers/SAVED (NO OVERRIDES)\nNever overwrites - safe from the Random buttons")
+                }
+            }
+
             LoaderedQuickPanelImplementation {
                 styleName: "classic"
                 sourceComponent: ClassicQuickPanel {}
@@ -426,6 +441,11 @@ Item {
     ToggleDialog {
         shownPropertyString: "showIconPickerDialog"
         dialog: IconPickerDialog {}
+    }
+
+    ToggleDialog {
+        shownPropertyString: "showSaveWallpaperDialog"
+        dialog: SaveWallpaperDialog {}
     }
 
     component ToggleDialog: Loader {
