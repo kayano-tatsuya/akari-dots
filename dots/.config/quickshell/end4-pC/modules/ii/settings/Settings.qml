@@ -22,6 +22,7 @@ Scope {
 
     Component.onCompleted: {
         GlobalStates.settingsOpen = false;
+        GlobalStates.settingsDialogHost = settingsWindow;
     }
 
     PanelWindow {

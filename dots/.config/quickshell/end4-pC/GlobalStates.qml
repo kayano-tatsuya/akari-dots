@@ -35,6 +35,7 @@ Singleton {
     property bool workspaceShowNumbers: false
     property string settingsPage: ""
     property Item currentPageInstance: null
+    property Item settingsDialogHost: null
     property list<real> visualizerPoints: []
     property bool desktopWidgetKeyboardFocus: false
     property bool desktopMenuOpen: false

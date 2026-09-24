@@ -14,8 +14,26 @@ ContentPage {
     id: page
     forceWidth: true
     property bool showSaveWallpaperDialog: false
+    property var saveWallpaperDialogLoader: null
     property bool pixivNsfw: false
     property bool pixivNsfwLoaded: false
+
+    property Component saveWallpaperDialogComponent: Component {
+        ToggleDialog {
+            z: 10
+            shownPropertyString: "showSaveWallpaperDialog"
+            dialog: SaveWallpaperDialog {}
+        }
+    }
+
+    function openSaveWallpaperDialog() {
+        const host = GlobalStates.settingsDialogHost
+        if (host === null) return
+        if (page.saveWallpaperDialogLoader === null) {
+            page.saveWallpaperDialogLoader = saveWallpaperDialogComponent.createObject(host)
+        }
+        page.showSaveWallpaperDialog = true
+    }
 
     function goTo(term) {
         const t = term.toLowerCase().trim()
@@ -321,7 +339,7 @@ ContentPage {
                     materialIcon: "save"
                     mainText: Translation.tr("Save wallpaper")
                     onClicked: {
-                        page.showSaveWallpaperDialog = true;
+                        page.openSaveWallpaperDialog();
                     }
                     StyledToolTip {
                         text: Translation.tr("Saves the current wallpaper to ~/Pictures/Wallpapers/SAVED (NO OVERRIDES)\nNever overwrites - safe from the Random buttons")
@@ -1572,11 +1590,6 @@ ContentPage {
                 }
             }
         }
-    }
-
-    ToggleDialog {
-        shownPropertyString: "showSaveWallpaperDialog"
-        dialog: SaveWallpaperDialog {}
     }
 
     component ToggleDialog: Loader {
