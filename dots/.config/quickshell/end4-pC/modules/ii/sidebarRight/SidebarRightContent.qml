@@ -280,7 +280,7 @@ Item {
                                     buttonIcon: "edit"
                                     onClicked: root.editMode = !root.editMode
                                     StyledToolTip {
-                                        text: Translation.tr("Edit quick toggles") + (root.editMode ? Translation.tr("\nLMB to enable/disable\nRMB to toggle size\nScroll to swap position") : "")
+                                        text: Translation.tr("Edit quick toggles") + (root.editMode ? Translation.tr("\nClick a toggle below the line to add it\n× badge removes · drag the corner handle to resize\nDrag onto another toggle to reorder") : "")
                                     }
                                 }
                                 QuickToggleButton {
