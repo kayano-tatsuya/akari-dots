@@ -357,6 +357,17 @@ ContentPage {
         }
     }
 
+    Process {
+        id: randomWallProc
+        property string status: ""
+        command: ["bash", "-c", Quickshell.shellPath("scripts/colors/random/random_konachan_wall.sh")]
+        stdout: SplitParser {
+            onRead: data => {
+                randomWallProc.status = data.trim();
+            }
+        }
+    }
+
     ColumnLayout {
         id: mainLayout
         Layout.fillWidth: true
@@ -532,6 +543,34 @@ ContentPage {
                             }
                             StyledToolTip {
                                 text: "Change accent color"
+                            }
+                        }
+
+                        RippleButton {
+                            id: konachanButton
+                            anchors.right: schemeButton.left
+                            anchors.rightMargin: 6
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 48
+                            height: parent.height
+                            padding: 0
+                            enabled: !randomWallProc.running
+                            visible: Config.options.policies.weeb !== 0
+                            colBackground: ColorUtils.transparentize(Appearance.colors.colOnLayer1, 0.9)
+                            colBackgroundHover: ColorUtils.transparentize(Appearance.colors.colOnLayer1, 0.75)
+                            onClicked: randomWallProc.running = true
+                            contentItem: Item {
+                                anchors.fill: parent
+
+                                MaterialSymbol {
+                                    anchors.centerIn: parent
+                                    text: randomWallProc.running ? "hourglass_top" : "shuffle"
+                                    iconSize: 22
+                                    color: Appearance.colors.colOnLayer1
+                                }
+                            }
+                            StyledToolTip {
+                                text: Translation.tr("Random SFW Anime wallpaper from Konachan")
                             }
                         }
 
