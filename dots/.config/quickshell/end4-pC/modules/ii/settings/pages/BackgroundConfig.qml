@@ -6,6 +6,8 @@ import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
 import Quickshell.Hyprland
+import Quickshell
+import Quickshell.Io
 
 
 ContentPage {
@@ -41,6 +43,17 @@ ContentPage {
         return /\.(mp4|webm|mkv|avi|mov)$/i.test(path)
             ? Config.options.background.thumbnailPath
             : path
+    }
+
+    Process {
+        id: randomWallProc
+        property string status: ""
+        command: ["bash", "-c", Quickshell.shellPath("scripts/colors/random/random_konachan_wall.sh")]
+        stdout: SplitParser {
+            onRead: data => {
+                randomWallProc.status = data.trim();
+            }
+        }
     }
 
     ColumnLayout {
@@ -311,6 +324,22 @@ ContentPage {
                     currentValue: Config.options.background.wallpaperAnimation
                     onSelected: newValue => {
                         Config.options.background.wallpaperAnimation = newValue;
+                    }
+                }
+
+                RippleButtonWithIcon {
+                    Layout.fillWidth: true
+                    enabled: !randomWallProc.running
+                    visible: Config.options.policies.weeb !== 0
+                    materialIcon: "shuffle"
+                    mainText: randomWallProc.running
+                        ? Translation.tr("Be patient...")
+                        : Translation.tr("Random: Konachan")
+                    onClicked: {
+                        randomWallProc.running = true;
+                    }
+                    StyledToolTip {
+                        text: Translation.tr("Random SFW Anime wallpaper from Konachan\nImage is saved to ~/Pictures/Wallpapers")
                     }
                 }
             }
