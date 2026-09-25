@@ -1,178 +1,76 @@
 <div align="center">
-    <h1>【 end_4's Hyprland dotfiles...but further weebified 】</h1>
-    <h3></h3>
-</div>
-
-<div align="center"> 
-
-![](https://img.shields.io/github/last-commit/end-4/dots-hyprland?&style=for-the-badge&color=8ad7eb&logo=git&logoColor=D9E0EE&labelColor=1E202B)
-![](https://img.shields.io/github/stars/end-4/dots-hyprland?style=for-the-badge&logo=andela&color=86dbd7&logoColor=D9E0EE&labelColor=1E202B)
-![](https://img.shields.io/github/repo-size/end-4/dots-hyprland?color=86dbce&label=SIZE&logo=protondrive&style=for-the-badge&logoColor=D9E0EE&labelColor=1E202B)
-<a href="https://discord.gg/GtdRBXgMwq"> <img alt="Dynamic JSON Badge" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscordapp.com%2Fapi%2Finvites%2FGtdRBXgMwq%3Fwith_counts%3Dtrue&query=approximate_member_count&style=for-the-badge&logo=discord&logoColor=D9E0EE&label=discord&labelColor=%231E202B&color=86dbc0&link=https%3A%2F%2Fdiscord.gg%2FGtdRBXgMwq"> </a>
-
+    <h1>akari-dots</h1>
+    <h3>Hyprland dotfiles, running the <b>akari</b> Quickshell shell</h3>
 </div>
 
 <div align="center">
-    <h2>• overview •</h2>
-    <h3></h3>
+
+![last-commit](https://img.shields.io/github/last-commit/kayano-tatsuya/akari-dots?style=for-the-badge&color=8ad7eb&logo=git&logoColor=D9E0EE&labelColor=1E202B)
+![stars](https://img.shields.io/github/stars/kayano-tatsuya/akari-dots?style=for-the-badge&logo=andela&color=86dbd7&logoColor=D9E0EE&labelColor=1E202B)
+![repo-size](https://img.shields.io/github/repo-size/kayano-tatsuya/akari-dots?color=86dbce&label=SIZE&logo=protondrive&style=for-the-badge&logoColor=D9E0EE&labelColor=1E202B)
+
 </div>
 
-> [!WARNING]  
-> Hyprland 0.55 update:
-> If your distro has not shipped Hyprland 0.55 and/or you're not ready for it, you should switch to the Pre-Hyprland Luaification release (or not update yet, if you're going to do that). See the wiki for more info: [Install](https://ii.clsty.link/en/ii-qs/01setup/#automated-installation) | [Update](https://ii.clsty.link/en/ii-qs/01setup/#updating)
+## What this is
 
-<details> 
-  <summary>What this is/isn't</summary>
+A Hyprland dotfiles config whose shell is **akari** — a Quickshell/QML desktop shell
+providing the bar, wallpaper selector, sidebar, notifications, lock screen, overlays
+and a large pile of settings.
 
-  - Technically, configuration files
-  - Realistically, mostly the custom graphical shell
-  - NOT a system setup script: no graphic drivers, no zram setup, etc.
-  
-</details>
+- Configuration files, plus a Quickshell shell.
+- **Not** a system provisioning script: no GPU drivers, no zram, no bootloader.
+- Targets Arch and Fedora-based systems. Other distros are best-effort.
 
-<details> 
-  <summary>Notable features</summary>
-     
-  - **Overview**: Shows open apps with live previews
-  - **AI**: Gemini, Ollama, and more
-  - **QoL**: screen translation, anti-flashbang, Google Lens
-  - **Material themes**: Choose your wallpaper, done, enjoy
-  - **Transparent installation**: Every command is shown before it's run
-</details>
+## Install
 
-<details> 
-  <summary>Installation</summary>
+```bash
+git clone https://github.com/kayano-tatsuya/akari-dots.git
+cd akari-dots
+./setup install
+```
 
-   - **IMPORTANT: Hyprland 0.55 Update**: If your distro has not shipped Hyprland 0.55 and/or you're not ready for it, you should switch to the Pre-Hyprland Luaification release. See [the wiki](https://ii.clsty.link/en/ii-qs/01setup/) for more info
-   - Just run `bash <(curl -s https://ii.clsty.link/get)`
-     - Or, clone this repo and run `./setup install`
-     - See [the wiki](https://ii.clsty.link/en/ii-qs/01setup/) for more details
-   - **Keybinds**: Should be somewhat familiar to Windows or GNOME users. Important ones:
-     - `Super`+`/` = keybind list
-     - `Super`+`Enter` = terminal
+The installer refuses to run as root. It symlinks `dots/` and `dots-extra/` into
+`~/.config` and installs the shell to `~/.config/quickshell/akari`.
 
+To uninstall, remove the symlinks and the shell directory.
 
-</details>
+## Layout
 
-<details>
-  <summary>Software overview</summary>
+| Path | Purpose |
+|---|---|
+| `dots/.config/quickshell/akari/` | The akari shell (QML). This is the bulk of the repo. |
+| `dots/.config/hypr/hyprland/` | Hyprland config: `variables.lua`, `execs.lua`, `keybinds.lua` |
+| `dots-extra/` | Optional per-distro extras (e.g. Fedora) |
+| `sdata/` | Installer logic and packaging recipes |
+| `setup` | Installer entrypoint |
 
-  | Software | Purpose |
-  | ------------- | ------------- |
-  | [Hyprland](https://github.com/hyprwm/hyprland) | The compositor (manages and renders windows) |
-  | [Quickshell](https://quickshell.outfoxxed.me/) | A QtQuick-based widget system, used for the status bar, sidebars, etc. |
-  | Others | See [deps-info.md](https://github.com/end-4/dots-hyprland/blob/main/sdata/deps-info.md) |
+Shell settings and user data live outside the repo, in `~/.config/akari/`
+(`config.json`, `presets/`, `actions/`). The repo holds defaults only.
 
-</details>
+## Notes on this fork
 
-<details>
-    <summary>Discord</summary>
-        <a href="https://discord.gg/GtdRBXgMwq"> Server link</a> | I hope this provides a friendlier environment for support without needing me to personally accept every friend request/DM. For real issues, prefer GitHub
+- The shell config directory, the QML module namespace, and the launch variable
+  were renamed from their upstream names to **akari**, so the config does not
+  advertise itself as a fork. Where behaviour depended on the old names, it was
+  updated: the `panelFamily` setting, the `qs -c` re-activation path, and the
+  `QUICKSHELL_CONFIG_NAME` used by the wallpaper and theme scripts.
+- The **secret-tool keyring namespace is deliberately unchanged.** The stored
+  Gemini API key is filed under the original application attribute; renaming it
+  would orphan the stored secret. Only the user-visible label was rebranded.
+- The Settings → About "Update" button clones this repository and extracts
+  `dots/.config/quickshell/akari/`, so it updates the shell in place.
 
-</details>
+## Credits
 
-<div align="center">
-    <h2>• screenshots •</h2>
-    <h3></h3>
-</div>
+This work is a derivative and would not exist without the following. Both are
+worth reading if you want a maintained or more general-purpose version:
 
-<div align="center">
-    <img src="assets/illogical-impulse.svg" alt="illogical-impulse logo" style="float:left; width:400;">
-</div>
+- **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)** — the
+  original Hyprland dotfiles and the Quickshell shell lineage, under the GPL-3.0
+  (see `LICENSE`).
+- **[pctrade/end4-pC](https://github.com/pctrade/end4-pC)** — the Quickshell
+  shell this was adopted from, and the source of the wallpaper/booru services.
 
-Widget system: Quickshell | Support: Yes
-
-[Showcase video](https://www.youtube.com/watch?v=RPwovTInagE)
-
-| AI, settings app | Some widgets |
-|:---|:---------------|
-| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5d4e7d07-d0b4-4406-a4c9-ed7ba90e3fe4" /> | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6a32395f-9437-4192-8faf-2951a9e84cbe" /> |
-| Window management | wow look its orange |
-| <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c51bed8b-3670-4d4c-9074-873be224fb8e" /> | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/98703a66-0743-439f-a721-cef7afa6ab95" /> |
-
-<div align="center">
-    <h2>• thank you •</h2>
-    <h3></h3>
-</div>
-
- - [@clsty](https://github.com/clsty) for making the dotfiles accessible by taking care of the install script and many other things
- - [@midn8hustlr](https://github.com/midn8hustlr) for greatly improving the color generation system
- - [@outfoxxed](https://github.com/outfoxxed/) for being extremely supportive in my Quickshell journey
- - Quickshell: [Soramane](https://github.com/caelestia-dots/shell/), [FridayFaerie](https://github.com/FridayFaerie/quickshell), [nydragon](https://github.com/nydragon/nysh)
- - AGS: [Aylur](https://github.com/Aylur/dotfiles/tree/ags-pre-ts), [kotontrion](https://github.com/kotontrion/dotfiles)
- - EWW: [fufexan](https://github.com/fufexan/dotfiles)
-
-<div align="center">
-    <h2>• stonks •</h2>
-    <h3></h3>
-</div>
-
-- I promise not to attempt an +ULTRARICOSHOT irl... Coins can go here: https://github.com/sponsors/end-4
-- Tentacle cat hub twinkle internet points
-
-[![Stargazers over time](https://starchart.cc/end-4/dots-hyprland.svg?variant=adaptive)](https://starchart.cc/end-4/dots-hyprland)
-
-
----
-
-<div align="center">
-    <h2>• previous styles •</h2>
-    <h3></h3>
-</div>
-
-- **Unsupported!**
-- **Source**: illogical-impulse AGS in `ii-ags` branch, others in `archive` branch.
-- List is in reverse chronological order
-
-### illogical-impulse (AGS)
-
-Widget system: AGS | Support: No
-
-| AI | Common widgets |
-|:---|:---------------|
-| ![image](https://github.com/user-attachments/assets/9d7af13f-89ef-470d-ba78-d2288b79cf60) | ![image](https://github.com/end-4/dots-hyprland/assets/97237370/406b72b6-fa38-4f0d-a6c4-4d7d5d5ddcb7) |
-| Window management | Weeb power |
-| ![image](https://github.com/user-attachments/assets/02983b9b-79ba-4c25-8717-90bef2357ae5) | ![image](https://github.com/user-attachments/assets/bbb332ec-962a-4e88-a95b-486d0bd8ce76) |
-
-#### m3ww
-
-Widget system: EWW | Support: No
-
-<a href="https://streamable.com/85ch8x">
-<img src="https://github.com/end-4/dots-hyprland/assets/97237370/09533e64-b6d7-47eb-a840-ee90c6776adf" alt="Material Eww!">
-</a>
-
-#### NovelKnock
-
-Widget system: EWW | Support: No
-
-<a href="https://streamable.com/7vo61k">
-<img src="https://github.com/end-4/dots-hyprland/assets/97237370/42903d03-bf6f-49d4-be7f-dd77e6cb389d" alt="Desktop Preview">
-</a>
-
-#### Hybrid
-
-Widget system: EWW | Support: No
-
-<a href="https://streamable.com/4oogot">
-<img src="https://github.com/end-4/dots-hyprland/assets/97237370/190deb1e-f6f5-46ce-8cf0-9b39944c079d" alt="click the circles!">
-</a>
-
-#### Windoes
-
-Widget system: EWW | Support: No
-
-<a href="https://streamable.com/5qx614">
-<img src="https://github.com/end-4/dots-hyprland/assets/97237370/b15317b1-f295-49f5-b90c-fb6328b8d886" alt="Desktop Preview">
-</a>
-
-
-
-<div align="center">
-    <h2>• inspirations/copying •</h2>
-    <h3></h3>
-</div>
-
- - Inspiration: osu!lazer (Hybrid), Windows 11 (Windoes), AvdanOS (NovelKnock), Material Design 3 (m3ww & later)
- - Copying: Absolutely, feel free. Just follow the license and it's all good
- 
+The wallpaper selector, booru sidebar, and shell services in particular are
+end-4's and pctrade's work. This repository is a rebrand plus local changes, not
+a from-scratch shell.
