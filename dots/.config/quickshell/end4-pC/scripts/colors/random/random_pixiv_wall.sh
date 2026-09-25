@@ -36,7 +36,8 @@
 # recently used illusts (ids kept in
 # $XDG_STATE_HOME/quickshell/pixiv-recent-ids), and is applied via
 # switchwall.sh. Older random pixiv pulls are pruned automatically (the
-# current and lock wallpapers are kept).
+# current and lock wallpapers are kept). R-18/R-18G picks instead go into the
+# "Homework shelf" (~/Pictures/homework/🌶️), which is never pruned.
 
 get_pictures_dir() {
     if command -v xdg-user-dir &> /dev/null; then
@@ -202,7 +203,7 @@ if [ "${PIXIV_NO_AI:-false}" = "true" ]; then
     jqFilter="$jqFilter and ((.ai_type // \"1\") != \"2\")"
 fi
 jqFilter="$jqFilter and ((.id | tostring) | IN(\$used[]) | not)"
-jqFilter="$jqFilter) | [(.id | tostring), (.meta_single_page.original_image_url // (.meta_pages[0].image_urls.original // .meta_pages[0].image_urls.large) // .image_urls.large // empty)] | @tsv"
+jqFilter="$jqFilter) | [(.id | tostring), (.meta_single_page.original_image_url // (.meta_pages[0].image_urls.original // .meta_pages[0].image_urls.large) // .image_urls.large // empty), (.x_restrict // 0 | tostring), (.sanity_level // 0 | tostring)] | @tsv"
 
 line=$(echo "$resp" | jq -r --argjson used "$usedJson" "$jqFilter" | sed '/^[[:space:]]*$/d' | shuf -n 1)
 if [ -z "$line" ]; then
@@ -214,6 +215,16 @@ url=$(echo "$line" | cut -f2)
 if [ -z "$url" ]; then
     echo "error: no usable Pixiv illust found (try different tags/filters)"
     exit 1
+fi
+
+# A work is R-18/R-18G when x_restrict != 0 or sanity_level == 6; only such
+# picks count as the "actual NSFW pull" (SFW works pulled while NSFW mode is
+# on still stay in ~/Pictures/Wallpapers, never in the homework shelf).
+xRestrict=$(echo "$line" | cut -f3)
+sanityLevel=$(echo "$line" | cut -f4)
+isNsfw=false
+if [ "${PIXIV_ALLOW_NSFW:-false}" = "true" ] && { [ "$xRestrict" != "0" ] || [ "$sanityLevel" = "6" ]; }; then
+    isNsfw=true
 fi
 
 # 4) Download (Pixiv images need the Referer header). Save to a unique
@@ -237,7 +248,17 @@ prune_old_wallpapers() {
 
 mkdir -p "$PICTURES_DIR/Wallpapers"
 ext=$(echo "$url" | awk -F. '{print $NF}' | tr -d '\r')
-downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_pixiv_$(date +%s).$ext"
+if [ "$isNsfw" = "true" ]; then
+    # Actual R-18/R-18G pull -> the Homework shelf. The shelf is a trophy
+    # case: it is never pruned (unlike ~/Pictures/Wallpapers). Only this
+    # branch may create homework/🌶️ (never for SFW pulls, never elsewhere).
+    homeworkDir="$PICTURES_DIR/homework/🌶️"
+    mkdir -p "$homeworkDir"
+    downloadPath="$homeworkDir/random_wallpaper_pixiv_$(date +%s).$ext"
+    echo "[pixiv] R-18 -> homework shelf: $homeworkDir" >&2
+else
+    downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper_pixiv_$(date +%s).$ext"
+fi
 curl -s -L "$url" \
     -H "Referer: $REFERER" \
     -H "User-Agent: $USER_AGENT" \

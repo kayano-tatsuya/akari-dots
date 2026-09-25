@@ -25,7 +25,8 @@ MouseArea {
     property var quickDirs: [
         { icon: "home",       name: "Home   ",       path: `${Directories.home}`,                alwaysVisible: Config.options.wallpaperSelector.showHomePath },
         { icon: "wallpaper",  name: "Wallpapers   ", path: `${Directories.pictures}/Wallpapers`, alwaysVisible: true },
-        { icon: "imagesmode", name: "Homework   ",   path: `${Directories.pictures}/homework`,   alwaysVisible: Config.options.policies.weeb },
+        { icon: "imagesmode", name: "Homework   ",   path: `${Directories.pictures}/homework`,   alwaysVisible: Config.options.policies.weeb,
+          autoCreate: true },
         { icon: "casino",     name: "Random   ",     path: `${Directories.pictures}/Random`,     alwaysVisible: true },
         { 
             icon: "image",     
@@ -36,6 +37,14 @@ MouseArea {
             alwaysVisible: Config.options.wallpaperSelector.userPath?.trim().length > 0 
         }
     ]
+
+    // The Homework tab browses ~/Pictures/homework (R-18 Pixiv pulls land in
+    // ~/Pictures/homework/🌶️, see random_pixiv_wall.sh). Auto-create the folder
+    // when the tab is first opened so it is never an empty dead-end (this is
+    // the "un-weeb" homework shelf).
+    function ensureQuickDirExists(entry) {
+        if (entry && entry.autoCreate) Quickshell.execDetached(["mkdir", "-p", entry.path])
+    }
 
     function updateThumbnails() {
         const item = gridLoader.item;
@@ -277,7 +286,10 @@ MouseArea {
                                         colBackgroundToggled: Appearance.colors.colSecondaryContainer
                                         colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
                                         colRippleToggled: Appearance.colors.colSecondaryContainerActive
-                                        onClicked: Wallpapers.setDirectory(modelData.path)
+                                        onClicked: {
+                                            root.ensureQuickDirExists(modelData)
+                                            Wallpapers.setDirectory(modelData.path)
+                                        }
                                         contentItem: RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 12
