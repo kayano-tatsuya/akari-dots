@@ -328,6 +328,47 @@ Item {
         anchors.fill: indeterminateProgressBar
     }
 
+    // ─── Empty state ───
+    // The grid used to render literally nothing when a folder held no images,
+    // which is indistinguishable from "broken". That is how a dead preset tab
+    // (a directory that does not exist) went unnoticed for as long as it did.
+    Item {
+        id: emptyState
+        anchors.fill: parent
+        visible: Wallpapers.wallpaperModel.count === 0
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 48, 420)
+            spacing: 12
+
+            MaterialSymbol {
+                Layout.alignment: Qt.AlignHCenter
+                text: "hide_image"
+                iconSize: Appearance.font.pixelSize.larger * 2
+                color: Appearance.colors.colSubtext
+            }
+
+            StyledText {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                text: Translation.tr("No wallpapers in this folder")
+                font.pixelSize: Appearance.font.pixelSize.normal
+                color: Appearance.colors.colSubtext
+            }
+
+            StyledText {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideMiddle
+                text: Wallpapers.effectiveDirectory
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.colors.colSubtext
+                opacity: 0.7
+            }
+        }
+    }
+
     // ─── Grid ───
     GridView {
         id: grid

@@ -143,13 +143,17 @@ Singleton {
         }
         stdout: StdioCollector {
             onStreamFinished: {
-                    root.directory = Qt.resolvedUrl(validateDirProc.nicePath)
                 const result = text.trim()
                 if (result === "dir") {
+                    root.directory = Qt.resolvedUrl(validateDirProc.nicePath)
                 } else if (result === "file") {
                     root.directory = Qt.resolvedUrl(FileUtils.parentDirectory(validateDirProc.nicePath))
                 } else {
-                    // Ignore
+                    // The assignment used to happen above, before this check, which
+                    // made the "ignore" branch a lie: a path that doesn't exist was
+                    // still assigned, the model went empty, and the picker showed a
+                    // blank panel with no explanation. Refuse to navigate instead.
+                    console.log("[Wallpapers] setDirectory: not a path, staying in", root.effectiveDirectory)
                 }
             }
         }

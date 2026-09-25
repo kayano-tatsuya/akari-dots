@@ -42,8 +42,34 @@ MouseArea {
     // ~/Pictures/homework/🌶️, see random_pixiv_wall.sh). Auto-create the folder
     // when the tab is first opened so it is never an empty dead-end (this is
     // the "un-weeb" homework shelf).
-    function ensureQuickDirExists(entry) {
-        if (entry && entry.autoCreate) Quickshell.execDetached(["mkdir", "-p", entry.path])
+    //
+    // Two things this has to get right, and it used to get both wrong:
+    //
+    //  1. Directories.pictures still carries its "file://" prefix, so the path
+    //     must be trimmed before it reaches mkdir. Handing mkdir -p a URL makes
+    //     it build a literal "file:" tree relative to our CWD instead of
+    //     touching the real folder — it was silently creating
+    //     ~/file:/home/<user>/Pictures/homework and never ~/Pictures/homework.
+    //  2. mkdir has to COMPLETE before we navigate. Firing it detached and then
+    //     calling setDirectory immediately races the two, and setDirectory will
+    //     point the picker at a directory that doesn't exist yet.
+    Process {
+        id: ensureProc
+        property var entry: null
+        function ensureAndOpen(e) {
+            ensureProc.entry = e
+            ensureProc.running = true
+        }
+        command: ensureProc.entry
+            ? ["mkdir", "-p", FileUtils.trimFileProtocol(ensureProc.entry.path)]
+            : ["true"]
+        onExited: (exitCode) => {
+            if (exitCode === 0) {
+                Wallpapers.setDirectory(ensureProc.entry.path)
+            } else {
+                console.log("[WallpaperSelector] could not create", ensureProc.entry?.path)
+            }
+        }
     }
 
     function updateThumbnails() {
@@ -287,8 +313,10 @@ MouseArea {
                                         colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
                                         colRippleToggled: Appearance.colors.colSecondaryContainerActive
                                         onClicked: {
-                                            root.ensureQuickDirExists(modelData)
-                                            Wallpapers.setDirectory(modelData.path)
+                                            if (modelData.autoCreate)
+                                                ensureProc.ensureAndOpen(modelData)
+                                            else
+                                                Wallpapers.setDirectory(modelData.path)
                                         }
                                         contentItem: RowLayout {
                                             anchors.fill: parent
@@ -412,6 +440,23 @@ MouseArea {
                             }
                         }
                     }
+                }
+
+                // Restored from end-4 (WallpaperSelectorContent.qml:249). pctrade's
+                // "Wallpapers" rewrite (c26607ac) dropped it, but left the Ctrl+L
+                // handler below calling addressBar.focusBreadcrumb() — so that key
+                // threw a ReferenceError and the picker had no way to reach a path
+                // other than the four preset tabs.
+                AddressBar {
+                    id: addressBar
+                    Layout.margins: 4
+                    Layout.fillWidth: true
+                    Layout.fillHeight: false
+                    directory: Wallpapers.effectiveDirectory
+                    onNavigateToDirectory: path => {
+                        Wallpapers.setDirectory(path.length == 0 ? "/" : path);
+                    }
+                    radius: wallpaperGridBackground.radius - Layout.margins
                 }
 
                 Item {
