@@ -356,7 +356,7 @@ ContentPage {
                         }
                     }
                     StyledToolTip {
-                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)")
+                        text: Translation.tr("Random wallpaper from Pixiv\nSet tags in ~/.config/pixiv/config (token: see pixiv-auth.py)\nTip: wallpaper-tag + Allow R-18 = R-18 壁紙 only")
                     }
                 }
 
