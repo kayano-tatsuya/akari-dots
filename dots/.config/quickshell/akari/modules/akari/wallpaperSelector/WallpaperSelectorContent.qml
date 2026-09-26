@@ -100,6 +100,27 @@ MouseArea {
         return toolbarLoader.item?.searchField ?? null;
     }
 
+    // Showing the field and focusing it have to happen together.
+    //
+    // extraOptions hides the toolbar with opacity:0 while the Loader inside it
+    // stays active, so the field keeps existing, keeps accepting focus and
+    // keeps driving Wallpapers.searchQuery while being completely invisible.
+    // You type into a field you cannot see and the grid filters anyway. Worse:
+    // once that invisible field holds focus, its own Keys handler declines
+    // printable keys (it ends in accepted=false), so the TextField inserts them
+    // itself -- which is how a bare "/" becomes a literal filter term, since
+    // searchQuery is interpolated straight into nameFilters with no trimming.
+    //
+    // showControls = true lifts toolbarVisible (= showControls || showSearchbar)
+    // and the field is already instantiated, so this resolves synchronously --
+    // there is no need to wait for the fade-in animation.
+    function focusSearchField() {
+        showControls = true;
+        const field = searchField();
+        field?.forceActiveFocus();
+        return field;
+    }
+
     // Toolbar button: force a regeneration for whatever directory is currently
     // open, nested subfolders included.
     //
@@ -199,21 +220,33 @@ MouseArea {
             event.accepted = true;
         } else if (event.key === Qt.Key_Backspace) {
             if (!root.filterFieldFocused) {
-                root.searchField()?.forceActiveFocus();
+                root.focusSearchField();
             }
             event.accepted = true;
         } else if (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_L) {
             addressBar.focusBreadcrumb();
             event.accepted = true;
-        } else if (event.key === Qt.Key_Slash) {
-            root.searchField()?.forceActiveFocus();
+        } else if (event.key === Qt.Key_Slash || event.text === "/") {
+            // "Open search", not "search for a slash".
+            //
+            // Only reached while the field is NOT focused: once it is, printable
+            // keys are consumed by the TextField inside the Loader and never
+            // propagate out here (see the comment on the field's own Keys
+            // handler). So a "/" typed into an already-open field inserts a
+            // literal slash, which is the conventional behaviour and is
+            // intentional. This branch is the "reveal it" half.
+            root.focusSearchField();
             event.accepted = true;
         } else {
-            const field = root.searchField();
-            if (field && event.text.length > 0 && !root.filterFieldFocused) {
-                field.text += event.text;
-                field.cursorPosition = field.text.length;
-                field.forceActiveFocus();
+            // Test the guard BEFORE focusing: afterwards filterFieldFocused is
+            // true and the field's own key handling appends the text, so
+            // appending here too would double every character.
+            if (event.text.length > 0 && !root.filterFieldFocused) {
+                const field = root.focusSearchField();
+                if (field) {
+                    field.text += event.text;
+                    field.cursorPosition = field.text.length;
+                }
             }
             event.accepted = true;
         }
@@ -726,6 +759,16 @@ MouseArea {
                                     onTextChanged: Wallpapers.searchQuery = text
                                     onActiveFocusChanged: root.filterFieldFocused = activeFocus
                                     Keys.onPressed: event => {
+                                        // This handler -- not the outer MouseArea's -- is
+                                        // where key handling for a focused search field
+                                        // actually happens. Once this field holds focus,
+                                        // printable keys NEVER reach the outer handler:
+                                        // the TextField consumes them for text insertion
+                                        // before they propagate out of the Loader.
+                                        // Only keys the TextField does not use (Escape,
+                                        // for one) still bubble up to it. So anything
+                                        // that must work while the user is typing in here
+                                        // has to be handled on this side.
                                         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_V) {
                                             root.handleFilePasting(event);
                                             event.accepted = true;
