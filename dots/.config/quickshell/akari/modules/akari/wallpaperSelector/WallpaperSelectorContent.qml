@@ -80,6 +80,26 @@ MouseArea {
         return Images.thumbnailSizeNameForDimensions(cellW - totalImageMargin, cellH - totalImageMargin);
     }
 
+    // The search field lives inside the toolbar Loader's sourceComponent, so its
+    // id is in that component's scope and is NOT visible from the Keys.onPressed
+    // handler on the outer MouseArea. Reaching for a bare `filterField` from
+    // there threw "ReferenceError: filterField is not defined" on every
+    // printable key, Backspace and "/".
+    //
+    // Note it is NOT enough to write toolbarLoader.item.filterField: QML does
+    // not expose ids declared inside a sourceComponent as properties of
+    // Loader.item. Only *declared* members of the component's root type are --
+    // which is why toolbarLoader.item.searchField works, and also why the
+    // neighbouring gridLoader.item?.moveSelection() always worked. The field is
+    // published through Toolbar's own `searchField` property, which the
+    // instantiation below binds to the filterField id.
+    //
+    // Null is a normal state, not an error: the Loader is only active when
+    // root.source === "local", and Ctrl+F can hide the searchbar entirely.
+    function searchField() {
+        return toolbarLoader.item?.searchField ?? null;
+    }
+
     // Toolbar button: force a regeneration for whatever directory is currently
     // open, nested subfolders included.
     //
@@ -179,20 +199,21 @@ MouseArea {
             event.accepted = true;
         } else if (event.key === Qt.Key_Backspace) {
             if (!root.filterFieldFocused) {
-                filterField.forceActiveFocus();
+                root.searchField()?.forceActiveFocus();
             }
             event.accepted = true;
         } else if (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_L) {
             addressBar.focusBreadcrumb();
             event.accepted = true;
         } else if (event.key === Qt.Key_Slash) {
-            filterField.forceActiveFocus();
+            root.searchField()?.forceActiveFocus();
             event.accepted = true;
         } else {
-            if (event.text.length > 0 && !root.filterFieldFocused) {
-                filterField.text += event.text;
-                filterField.cursorPosition = filterField.text.length;
-                filterField.forceActiveFocus();
+            const field = root.searchField();
+            if (field && event.text.length > 0 && !root.filterFieldFocused) {
+                field.text += event.text;
+                field.cursorPosition = field.text.length;
+                field.forceActiveFocus();
             }
             event.accepted = true;
         }
@@ -633,9 +654,17 @@ MouseArea {
                         }
 
                         Loader {
+                            id: toolbarLoader
                             active: root.source === "local"
                             visible: active
                             sourceComponent: Toolbar {
+                                // Publish the search field out through
+                                // Loader.item, so the outer MouseArea's
+                                // Keys.onPressed can reach it. QML does not
+                                // expose ids declared inside a sourceComponent,
+                                // so a bare `filterField` from out here throws
+                                // ReferenceError. See root.searchField().
+                                searchField: filterField
                                 IconToolbarButton {
                                     implicitWidth: height
                                     onClicked: {

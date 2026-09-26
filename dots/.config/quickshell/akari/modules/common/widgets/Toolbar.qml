@@ -19,6 +19,14 @@ Item {
     implicitHeight: background.implicitHeight
     property alias radius: background.radius
 
+    // Lets whoever instantiates this toolbar publish one of its inner items back
+    // out through Loader.item. QML does not expose ids declared inside a
+    // sourceComponent as properties of Loader.item, so an outer component
+    // cannot reach a nested id directly -- but it can reach a declared property
+    // of this root type. WallpaperSelectorContent uses this to drive the search
+    // field's focus from its outer Keys handler.
+    property var searchField: null
+
     Loader {
         active: root.enableShadow
         anchors.fill: background
