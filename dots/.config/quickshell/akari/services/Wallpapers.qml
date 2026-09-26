@@ -17,6 +17,7 @@ Singleton {
 
     property string thumbgenScriptPath: `${FileUtils.trimFileProtocol(Directories.scriptPath)}/thumbnails/thumbgen-venv.sh`
     property string generateThumbnailsMagickScriptPath: `${FileUtils.trimFileProtocol(Directories.scriptPath)}/thumbnails/generate-thumbnails-magick.sh`
+    property string thumbCheckScriptPath: `${FileUtils.trimFileProtocol(Directories.scriptPath)}/thumbnails/check-thumbnails-venv.sh`
     function getCleanDirPath(path) {
         if (!path) return "";
         return FileUtils.trimFileProtocol(path.toString()).replace(/\/+$/, "");
@@ -411,15 +412,90 @@ Singleton {
     }
 
     // Thumbnail generation
+    //
+    // Previews are NOT loaded from the image; they are read from the Freedesktop
+    // thumbnail cache (~/.cache/thumbnails/<size>/<md5>.png). A cache miss means
+    // a blank tile. This section decides when to (re)populate that cache.
+    //
+    // The primary generator is thumbgen-venv.sh (GnomeDesktop, spec-correct,
+    // supports -r/-i/--max_depth and reports machine-readable progress).
+    // generate-thumbnails-magick.sh is the "||" fallback and is kept
+    // spec-compatible so switching between them does not invalidate the cache.
+    //
+    // We only recurse when browsing under ~/Pictures. The picker's "Home" tab
+    // points at ~ (325k files on this machine), so an unconditional recursive
+    // pass would be ruinous. Depth is bounded relative to the directory being
+    // viewed, not from /home.
+
+    // Cheap "does this tree still need work?" probe. Runs check-thumbnails.py,
+    // which reuses GnomeDesktop's own lookup() so the check can never drift
+    // from the writer. Exit 0 => work needed, 1 => nothing to do.
+    property bool thumbCheckBusy: false
+    Process {
+        id: thumbCheckProc
+        property string size: "x-large"
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const n = parseInt(text.trim());
+                if (n > 0)
+                    root.generateThumbnail(thumbCheckProc.size);
+            }
+        }
+        onExited: {
+            root.thumbCheckBusy = false;
+        }
+    }
+
+    function maxDepthFor(dir) {
+        const clean = getCleanDirPath(dir);
+        const pics = getCleanDirPath(Directories.pictures);
+        // Recurse (bounded) only inside the pictures root.
+        return (clean === pics || clean.startsWith(pics + "/")) ? 5 : 0;
+    }
+
+    // Called on directory change / picker open. Does nothing if a probe or a
+    // generation is already running, so rapid navigation does not thrash.
+    function ensureThumbnails(size) {
+        if (thumbCheckBusy || thumbgenProc.running) return;
+        const dir = root.effectiveDirectory;
+        if (!dir) return;
+        thumbCheckProc.size = size;
+        thumbCheckProc.command = [
+            "bash", thumbCheckScriptPath,
+            dir, size, String(maxDepthFor(dir)),
+        ];
+        thumbCheckBusy = true;
+        thumbCheckProc.running = true;
+    }
+
+    // Regenerate for the current directory. Both the primary and the fallback
+    // generator already skip fresh thumbnails, so calling this when everything
+    // is cached is a cheap no-op -- that is what lets the toolbar button force
+    // a run without a separate code path.
     function generateThumbnail(size: string) {
         if (!["normal", "large", "x-large", "xx-large"].includes(size)) throw new Error("Invalid thumbnail size");
-        thumbgenProc.directory = root.directory
-        thumbgenProc.running = false
+        if (thumbgenProc.running) {
+            // Don't kill an in-flight run for the same directory; that used to
+            // thrash on rapid navigation and never finish anything.
+            if (thumbgenProc.directory === root.effectiveDirectory) return;
+            thumbgenProc.running = false;
+        }
+        const dir = FileUtils.trimFileProtocol(root.effectiveDirectory);
+        const depth = maxDepthFor(dir);
+        const recursive = depth > 0 ? " -r -i --max_depth " + depth : "";
+        // The `||` fallback needs a shell, so this has to be a command *string*
+        // rather than an argv array -- which means the path must be quoted by
+        // hand. It was not, and the picker's own default tree has a directory
+        // with a space in it ("SAVED (NO OVERRIDES)"), so bash word-split it
+        // and then parsed "(NO OVERRIDES)" as a subshell. The run failed
+        // silently: exit status was still 0 because thumbgen.py catches its own
+        // exceptions, so `||` never fired either and no fallback happened.
+        const q = `"${dir.replace(/"/g, '\\"')}"`;
+        thumbgenProc.directory = dir;
         thumbgenProc.command = [
             "bash", "-c",
-            `${thumbgenScriptPath} --size ${size} --machine_progress -d ${FileUtils.trimFileProtocol(root.directory)} || ${generateThumbnailsMagickScriptPath} --size ${size} -d ${FileUtils.trimFileProtocol(root.directory)}`,
+            `${thumbgenScriptPath} --size ${size}${recursive} --machine_progress -d ${q} || ${generateThumbnailsMagickScriptPath} --size ${size}${recursive ? " --recursive --max-depth " + depth : ""} -d ${q}`,
         ]
-        // console.log("[Wallpapers] Updating thumbnails with command ", thumbgenProc.command.join(" "))
         root.thumbnailGenerationProgress = 0
         thumbgenProc.running = true
     }

@@ -506,10 +506,21 @@ Item {
                         root.endDrag();
                     } else if (!dragInitiated) {
                         grid.currentIndex = delegateCell.index;
-                        if (GlobalStates.wallpaperSelectorTarget === "lockWall" || !Config.options.background.enableWallpaperPreview) {
+                        // A folder tile navigates on a single click, like a file
+                        // manager. Previously the `!fileIsDir` guard below meant
+                        // single-clicking a directory did nothing at all, so
+                        // entering a subfolder was only possible via a
+                        // double-click -- effectively undiscoverable, and the
+                        // reason nested wallpapers looked like they did not
+                        // exist. Wallpapers.select() already routes a directory
+                        // into setDirectory() via its `test -d` branch, so
+                        // routing it here changes nothing for real files.
+                        if (delegateCell.modelData.fileIsDir) {
+                            root.wallpaperSelected(delegateCell.modelData.filePath);
+                        } else if (GlobalStates.wallpaperSelectorTarget === "lockWall" || !Config.options.background.enableWallpaperPreview) {
                             root.wallpaperSelected(delegateCell.modelData.filePath);
                         } else {
-                            if (!delegateCell.modelData.fileIsDir && Config.options.background.enableWallpaperPreview) {
+                            if (Config.options.background.enableWallpaperPreview) {
                                 Wallpapers.startPreview(delegateCell.modelData.filePath);
                             }
                         }

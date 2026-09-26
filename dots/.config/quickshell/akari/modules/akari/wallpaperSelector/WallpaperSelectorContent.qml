@@ -72,14 +72,31 @@ MouseArea {
         }
     }
 
-    function updateThumbnails() {
+    function thumbnailSizeName() {
         const item = gridLoader.item;
         const totalImageMargin = (Appearance.sizes.wallpaperSelectorItemMargins + Appearance.sizes.wallpaperSelectorItemPadding) * 2;
         const cellW = item?.cellWidth ?? (wallpaperGridBackground.width / root.columns);
         const cellH = item?.cellHeight ?? (cellW / root.previewCellAspectRatio);
-        const thumbnailSizeName = Images.thumbnailSizeNameForDimensions(cellW - totalImageMargin, cellH - totalImageMargin);
-        Wallpapers.setDirectory(`${Directories.pictures}/Wallpapers`);
-        Qt.callLater(() => Wallpapers.generateThumbnail(thumbnailSizeName));
+        return Images.thumbnailSizeNameForDimensions(cellW - totalImageMargin, cellH - totalImageMargin);
+    }
+
+    // Toolbar button: force a regeneration for whatever directory is currently
+    // open, nested subfolders included.
+    //
+    // This used to hard-navigate to ~/Pictures/Wallpapers first and then call
+    // generateThumbnail on the next event-loop tick. That was wrong twice over:
+    // it ejected you from the folder you had navigated into, and because
+    // setDirectory() validates asynchronously (it forks a `test -d`), the tick
+    // fired before root.directory had changed, so it usually regenerated the
+    // *previous* directory. Now it simply regenerates where you already are.
+    function updateThumbnails() {
+        Wallpapers.generateThumbnail(thumbnailSizeName());
+    }
+
+    // Called when the picker opens and whenever the directory changes: ask
+    // whether anything actually needs generating before spending a run on it.
+    function ensureThumbnails() {
+        Wallpapers.ensureThumbnails(thumbnailSizeName());
     }
 
     function handleFilePasting(event) {
@@ -754,6 +771,7 @@ MouseArea {
                     filterField.forceActiveFocus()
                 else
                     root.forceActiveFocus()
+                ensureThumbnailsDebounce.restart()
             } else if (!GlobalStates.wallpaperSelectorOpen) {
                 sortMenuPopup.visible = false;
                 Wallpapers.stopPreview();
@@ -766,6 +784,38 @@ MouseArea {
         function onChanged() {
             if (Config.options.wallpaperSelector.closeAfterSelection)
                 GlobalStates.wallpaperSelectorOpen = false;
+        }
+    }
+
+    // Debounced "do we need thumbnails for what we're now looking at?".
+    // Keyed on the directory actually changing, not on every model mutation, so
+    // sorting/searching/reordering the current folder does not re-probe.
+    Timer {
+        id: ensureThumbnailsDebounce
+        interval: 350
+        onTriggered: root.ensureThumbnails()
+    }
+
+    // This is the hook that actually matters, and it is here rather than in
+    // onWallpaperSelectorOpenChanged because of how the panel is built:
+    // WallpaperSelector.qml holds a Loader whose `active` is `reallyOpen`, so
+    // this component is constructed only once the panel is already opening --
+    // by which time GlobalStates.wallpaperSelectorOpen is true and the open
+    // transition has long since fired. Anything that waits for that transition
+    // therefore never sees it; the only open event this object can observe is
+    // the close. (Verified: instrumenting both hooks showed
+    // "content completed; open=true" followed by only "openChanged open=false".)
+    // The Loader is torn down on close, so this fires exactly once per open,
+    // which is precisely the semantics we want.
+    Component.onCompleted: {
+        if (GlobalStates.wallpaperSelectorOpen)
+            ensureThumbnailsDebounce.restart();
+    }
+
+    Connections {
+        target: Wallpapers
+        function onEffectiveDirectoryChanged() {
+            ensureThumbnailsDebounce.restart();
         }
     }
 }
