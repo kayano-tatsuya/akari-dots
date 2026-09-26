@@ -15,3 +15,8 @@ __pycache__/
 
 # Emacs auto backup file
 *~
+
+# akari's own config carries API keys (ai.extraModels[].key_get_link,
+# apps.changePassword). It lives in ~/.config/akari/config.json, outside the
+# repo, and must never be copied in. Nothing in sdata generates one.
+config.json

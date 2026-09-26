@@ -66,7 +66,15 @@ Singleton {
         onTriggered: () => {
             const index = root.list.findIndex((notif) => notif.notificationId === notificationId);
             const notifObject = root.list[index];
-            print("[Notifications] Notification timer triggered for ID: " + notificationId + ", transient: " + notifObject?.isTransient);
+            // findIndex returns -1 if the notification was already discarded or
+            // removed, which makes root.list[index] undefined -- reading
+            // notifObject.isTransient then threw "Cannot read property
+            // 'isTransient' of undefined". Nothing left to time out.
+            if (!notifObject) {
+                destroy();
+                return;
+            }
+            print("[Notifications] Notification timer triggered for ID: " + notificationId + ", transient: " + notifObject.isTransient);
             if (notifObject.isTransient) root.discardNotification(notificationId);
             else root.timeoutNotification(notificationId);
             destroy()

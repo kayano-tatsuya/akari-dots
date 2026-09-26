@@ -48,7 +48,10 @@ Singleton {
 
     Process {
         id: checkUpdatesProc
-        command: ["bash", "-c", "pacman=$(checkupdates 2>/dev/null | wc -l); aur=$(yay -Qua 2>/dev/null | wc -l || paru -Qua 2>/dev/null | wc -l || echo 0); echo $((pacman + aur))"]
+        // `wc -l` always exits 0, so the old `yay ... | wc -l || paru ... || echo 0`
+        // chain was dead after the first pipe: with yay absent, paru never ran and
+        // aur was silently 0. Group the two commands so paru is actually tried.
+        command: ["bash", "-c", "pacman=$(checkupdates 2>/dev/null | wc -l); aur=$({ yay -Qua 2>/dev/null || paru -Qua 2>/dev/null; } | wc -l); echo $((pacman + aur))"]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.count = parseInt(text.trim())

@@ -14,6 +14,13 @@ Item { // Window
     property var toplevel
     property var windowData
     property var monitorData
+    // tiledCount below iterates these, but they were never declared on this
+    // root -- only on the sibling OverviewWidget. `root.windowAddresses` was
+    // therefore undefined and `for (const addr of undefined)` threw on every
+    // evaluation, which broke singleTiled and, through it, initX/initY and
+    // targetWindowWidth/targetWindowHeight.
+    property var windowByAddress: HyprlandData.windowByAddress
+    property var windowAddresses: HyprlandData.addresses
     property var scale
     property bool restrictToWorkspace: true
     property real widthRatio: {
