@@ -25,7 +25,7 @@ CONFIG_FILE="sdata/subcmd-install/3.files-exp.yaml"
 
 # =============================================================================
 wizard_update_preferences() {
-  echo -e "${STY_CYAN}=== Dotfiles Customization ===${STY_RESET}"
+  echo -e "${STY_CYAN}=== Dotfiles Customization ===${STY_RST}"
 
     # Get current preferences
     current_shell=$(yq '.user_preferences.shell // "fish"' "$CONFIG_FILE")

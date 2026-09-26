@@ -67,8 +67,13 @@ install-uv(){
 }
 
 install-python-packages(){
-  UV_NO_MODIFY_PATH=1
-  ILLOGICAL_IMPULSE_VIRTUAL_ENV=$XDG_STATE_HOME/quickshell/.venv
+  # Both must be exported: plain assignments stay local to this shell, so
+  # neither the `bash <(curl .../uv/install.sh)` run below nor uv itself ever
+  # saw them. UV_NO_MODIFY_PATH is read by the uv installer
+  # (astral.sh/uv/install.sh: `if [ -n "${UV_NO_MODIFY_PATH:-}" ]`) and
+  # ILLOGICAL_IMPULSE_VIRTUAL_ENV is what Quickshell looks for at startup.
+  export UV_NO_MODIFY_PATH=1
+  export ILLOGICAL_IMPULSE_VIRTUAL_ENV=$XDG_STATE_HOME/quickshell/.venv
   x mkdir -p $(eval echo $ILLOGICAL_IMPULSE_VIRTUAL_ENV)
   # we need python 3.12 https://github.com/python-pillow/Pillow/issues/8089
   try uv venv --prompt .venv $(eval echo $ILLOGICAL_IMPULSE_VIRTUAL_ENV) -p 3.12
