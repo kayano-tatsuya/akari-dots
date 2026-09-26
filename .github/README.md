@@ -73,4 +73,4 @@ worth reading if you want a maintained or more general-purpose version:
 
 The wallpaper selector, booru sidebar, and shell services in particular are
 end-4's and pctrade's work. This repository is a rebrand plus local changes, not
-a from-scratch shell.
+a from-scratch shell. the authors of the respective dots above deserve their share of credit due, if you like this work, check them out as well.
