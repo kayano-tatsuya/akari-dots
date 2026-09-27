@@ -11,7 +11,10 @@ Process {
     required property string filePath;
     required property string sourceUrl;
     property string downloadUserAgent: Config.options?.networking.userAgent ?? ""
-    
+    // Some CDNs (pixiv's pximg in particular) reject requests that carry no
+    // Referer, so this cannot be left empty for those.
+    property string downloadReferer: ""
+
     function processFilePath() {
         return StringUtils.shellSingleQuoteEscape(FileUtils.trimFileProtocol(filePath));
     }
@@ -27,9 +30,16 @@ Process {
         return ` -H 'User-Agent: ${StringUtils.shellSingleQuoteEscape(downloadUserAgent)}'`;
     }
 
+    function curlRefererArg() {
+        if (!downloadReferer) {
+            return "";
+        }
+        return ` -H 'Referer: ${StringUtils.shellSingleQuoteEscape(downloadReferer)}'`;
+    }
+
     running: true
     command: ["bash", "-c", 
-        `mkdir -p $(dirname '${processFilePath()}'); [ -f '${processFilePath()}' ] || curl -sSL '${processSourceUrl()}'${curlUserAgentArg()} -o '${processFilePath()}' && file '${processFilePath()}'`
+        `mkdir -p $(dirname '${processFilePath()}'); [ -f '${processFilePath()}' ] || curl -sSL '${processSourceUrl()}'${curlUserAgentArg()}${curlRefererArg()} -o '${processFilePath()}' && file '${processFilePath()}'`
     ]
     stdout: StdioCollector {
         id: imageSizeOutputCollector

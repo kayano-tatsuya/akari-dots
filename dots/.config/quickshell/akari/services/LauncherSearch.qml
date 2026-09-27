@@ -214,6 +214,30 @@ Singleton {
             }
         },
         {
+            action: "pixiv",
+            execute: args => {
+                if (!args || args.trim().length === 0) {
+                    Quickshell.execDetached(["notify-send", "Pixiv", Translation.tr("Usage: /pixiv YOUR_REFRESH_TOKEN"), "-a", "Shell"]);
+                    return;
+                }
+                // Written to the same file the random-pixiv script reads, rather than
+                // the keyring, so there is one token rather than two that drift.
+                // Written atomically at mode 600 to match pixiv-auth.py.
+                const token = args.trim();
+                const q = s => `'${StringUtils.shellSingleQuoteEscape(String(s))}'`;
+                const dir = `${FileUtils.trimFileProtocol(Directories.config)}/pixiv`;
+                const path = `${dir}/refresh-token`;
+                Quickshell.execDetached(["bash", "-c",
+                    `mkdir -p ${q(dir)}`
+                    + ` && printf '%s\\n' ${q(token)} > ${q(path + ".tmp")}`
+                    + ` && chmod 600 ${q(path + ".tmp")}`
+                    + ` && mv -f ${q(path + ".tmp")} ${q(path)}`
+                    + ` && notify-send Pixiv ${q(Translation.tr("Refresh token saved!"))} -a Shell`
+                    + ` || notify-send Pixiv ${q(Translation.tr("Could not save the refresh token."))} -a Shell`
+                ]);
+            }
+        },
+        {
             action: "openweather",
             execute: args => {
                 if (!args || args.trim().length === 0) {

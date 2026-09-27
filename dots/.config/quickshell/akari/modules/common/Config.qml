@@ -887,6 +887,28 @@ Singleton {
                 property bool closeAfterSelection: true
                 property int changeInterval: 0 
                 property string sortMode: "time"
+                // Pixiv client credentials: the public Android app constants, which
+                // Pixiv issues to nobody and every unofficial client embeds. They
+                // are not a user secret and grant nothing without an account.
+                //
+                // Verified 2026-09-26 against https://oauth.secure.pixiv.net: this
+                // pair is accepted and a refresh_token grant against it returns
+                // 1508 "Invalid refresh token" (client OK, token bad). Note the
+                // client_id contains a lowercase L in "blbauo" - the widely-copied
+                // variant with an "a" there is rejected with 918 "invalid OAuth
+                // client", indistinguishable from a garbage client_id.
+                // Must stay in sync with scripts/colors/random/pixiv-auth.py.
+                property string pixivClientId: "MOBrBDS8blbauoSck0ZfDbtuzpyT"
+                property string pixivClientSecret: "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
+                // Pixiv rate-limits per account and documents heavy automated use
+                // as a suspension trigger, so paging is capped rather than
+                // infinite. Age filtering is NOT set here: it is read from
+                // PIXIV_ALLOW_NSFW in ~/.config/pixiv/config so this tab agrees
+                // with the "Random: Pixiv NSFW" switch instead of fighting it.
+                property int pixivMaxPages: 10
+                // Results per page. Pixiv's search returns 30 and ignores larger
+                // values, but keep it named so the cap maths is legible.
+                property int pixivPageSize: 30
             }
 
             property JsonObject windows: JsonObject {

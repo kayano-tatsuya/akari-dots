@@ -364,7 +364,11 @@ MouseArea {
 
                     Toolbar {
                         anchors.centerIn: parent
-                        visible: root.source !== "blapples" && root.source !== "naive"
+                        // pixiv has no resolution or quick-dir controls, so the whole
+                        // bar is hidden rather than showing a selector that does
+                        // nothing. The provider combo is a sibling of this, not a
+                        // child, so switching away from pixiv still works.
+                        visible: root.source !== "blapples" && root.source !== "naive" && root.source !== "pixiv"
 
                         Loader {
                             active: root.source === "local"
@@ -476,6 +480,7 @@ MouseArea {
                                 { value: "naive",     displayName: Translation.tr("NA-ive") },
                                 { value: "unsplash",  displayName: Translation.tr("Unsplash") },
                                 { value: "pexels",    displayName: Translation.tr("Pexels") },
+                                { value: "pixiv",     displayName: Translation.tr("Pixiv") },
                             ]
                             textRole: "displayName"
                             onCurrentIndexChanged: {

@@ -29,7 +29,33 @@ Item {
         root.provider === "pexels" &&
         (KeyringStorage.keyringData?.apiKeys?.pexels ?? "").length === 0
         
-    readonly property bool missingKey: root.unsplashMissingKey || root.pexelsMissingKey
+    readonly property bool pixivMissingKey:
+        root.provider === "pixiv" && OnlineWallpapers.pixivTokenMissing
+
+    readonly property bool missingKey:
+        root.unsplashMissingKey || root.pexelsMissingKey || root.pixivMissingKey
+
+    // Three providers need a credential, so resolve the notice text here rather
+    // than as nested ternaries at each of the three call sites.
+    readonly property string missingKeyTitle:
+        root.unsplashMissingKey ? Translation.tr("Unsplash API key not set")
+        : root.pexelsMissingKey   ? Translation.tr("Pexels API key not set")
+        :                           Translation.tr("Pixiv refresh token not set")
+
+    readonly property string missingKeyHint:
+        root.unsplashMissingKey ? Translation.tr("Open the launcher and run:\n/unsplash YOUR_API_KEY")
+        : root.pexelsMissingKey   ? Translation.tr("Open the launcher and run:\n/pexels YOUR_API_KEY")
+        :                           Translation.tr("Open the launcher and run:\n/pixiv YOUR_REFRESH_TOKEN")
+
+    readonly property string missingKeyFooter:
+        root.unsplashMissingKey ? Translation.tr("Get your free key at unsplash.com/developers")
+        : root.pexelsMissingKey   ? Translation.tr("Get your free key at pexels.com/api")
+        :                           Translation.tr("Or get one once with the bundled pixiv-auth.py helper")
+
+    // Set by onFetchError. Without this the only record of a failed fetch was a
+    // console.log, so a provider that returned nothing (bad token, parse bug,
+    // rate limit) looked exactly like a search that genuinely had no hits.
+    property string errorMessage: ""
 
     onProviderChanged:   { root.hoveredItem = null; _syncAndFetch() }
     onResolutionChanged: _syncAndFetch()
@@ -37,6 +63,7 @@ Item {
 
     function _syncAndFetch() {
         if (root.missingKey) return
+        root.errorMessage = ""
         OnlineWallpapers.provider   = root.provider
         OnlineWallpapers.resolution = root.resolution
         OnlineWallpapers.colorGroup = root.colorGroup
@@ -59,10 +86,15 @@ Item {
         const fileName = `${item.provider}-${item.id}.${ext}`
         const picturesPath = Directories.pictures.toString().replace("file://", "")
         const fullPath = `${picturesPath}/Wallpapers/${fileName}`
+        // pixiv's CDN answers 403 to any request without a Referer, so the full-size
+        // download needs the same header the thumbnails are fetched with.
+        const refererArg = item.provider === "pixiv"
+            ? ` -H 'Referer: ${OnlineWallpapers.pixivReferer}'`
+            : ""
         downloadProc.filePath = fullPath
         downloadProc.applyAfter = apply
         downloadProc.command = ["bash", "-c",
-            `mkdir -p '${picturesPath}/Wallpapers' && curl -L --silent '${item.full}' -o '${fullPath}'`
+            `mkdir -p '${picturesPath}/Wallpapers' && curl -L --silent '${item.full}'${refererArg} -o '${fullPath}'`
         ]
         downloadProc.running = true
     }
@@ -90,6 +122,7 @@ Item {
         }
         function onFetchError(message) {
             console.log("[OnlineWallpaperGrid] Error:", message)
+            root.errorMessage = message
         }
     }
 
@@ -138,9 +171,7 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 horizontalAlignment: Text.AlignHCenter
-                text: root.unsplashMissingKey
-                    ? Translation.tr("Unsplash API key not set")
-                    : Translation.tr("Pexels API key not set")
+                text: root.missingKeyTitle
                 font.pixelSize: Appearance.font.pixelSize.larger
                 color: Appearance.colors.colOnLayer1
             }
@@ -148,9 +179,7 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 horizontalAlignment: Text.AlignHCenter
-                text: root.unsplashMissingKey
-                    ? Translation.tr("Open the launcher and run:\n/unsplash YOUR_API_KEY")
-                    : Translation.tr("Open the launcher and run:\n/pexels YOUR_API_KEY")
+                text: root.missingKeyHint
                 color: Appearance.colors.colSubtext
                 font.pixelSize: Appearance.font.pixelSize.normal
                 font.family: Appearance.font.family.main
@@ -159,9 +188,7 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 horizontalAlignment: Text.AlignHCenter
-                text: root.unsplashMissingKey
-                    ? Translation.tr("Get your free key at unsplash.com/developers")
-                    : Translation.tr("Get your free key at pexels.com/api")
+                text: root.missingKeyFooter
                 color: Appearance.colors.colSubtext
                 font.pixelSize: Appearance.font.pixelSize.small
             }
@@ -177,6 +204,33 @@ Item {
             right: parent.right
             leftMargin: 4
             rightMargin: 4
+        }
+    }
+
+    // A failed fetch is reported here rather than only in the empty state: once any
+    // result has loaded the empty state is hidden, so a later failure (a timed-out
+    // page, a rate limit) used to stall with no visible explanation at all.
+    Rectangle {
+        visible: root.errorMessage.length > 0 && !OnlineWallpapers.loading
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            margins: 4
+        }
+        implicitHeight: errText.implicitHeight + 16
+        radius: Appearance.rounding.normal
+        color: Appearance.colors.colErrorContainer
+        z: 5
+
+        StyledText {
+            id: errText
+            anchors.centerIn: parent
+            width: parent.width - 24
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            text: root.errorMessage
+            color: Appearance.colors.colOnErrorContainer
         }
     }
 
@@ -377,7 +431,9 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 horizontalAlignment: Text.AlignHCenter
-                text: Translation.tr("No results — try fetching again")
+                text: root.errorMessage.length > 0
+                    ? root.errorMessage
+                    : Translation.tr("No results — try fetching again")
                 color: Appearance.colors.colSubtext
             }
 
@@ -386,7 +442,7 @@ Item {
                 implicitHeight: 36
                 buttonRadius: height / 2
                 colBackground: Appearance.colors.colSecondaryContainer
-                onClicked: OnlineWallpapers.fetch()
+                onClicked: { root.errorMessage = ""; OnlineWallpapers.fetch() }
                 contentItem: RowLayout {
                     anchors.centerIn: parent
                     spacing: 6
