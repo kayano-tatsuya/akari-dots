@@ -28,8 +28,45 @@ USER_AGENT = "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)"
 REDIRECT_URI = "https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback"
 LOGIN_URL = "https://app-api.pixiv.net/web/v1/login"
 AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
-CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
-CLIENT_SECRET = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
+
+# Built-in defaults for the public for_android app pair. Override them by putting
+# PIXIV_CLIENT_ID / PIXIV_CLIENT_SECRET in ~/.config/pixiv/config, the same
+# sourceable KEY="value" file the random script and the shell read for
+# PIXIV_ALLOW_NSFW and PIXIV_TAGS. An override that is present but blank is
+# ignored, so a half-edited line falls back here rather than breaking login.
+DEFAULT_CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
+DEFAULT_CLIENT_SECRET = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
+
+
+def config_file() -> str:
+    xdg = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    return os.path.join(xdg, "pixiv", "config")
+
+
+def config_value(key: str, fallback: str = "") -> str:
+    """Last assignment wins, quotes stripped, comments skipped.
+
+    Mirrors get_value() in pixiv_nsfw.sh and _pixivConfigValue() in the shell's
+    OnlineWallpapers.qml, so all three agree on which value is in effect.
+    """
+    path = config_file()
+    if not os.path.isfile(path):
+        return fallback
+    value = None
+    with open(path, encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith(key + "="):
+                value = line[len(key) + 1:].strip().strip("\"'")
+    if not value:
+        return fallback
+    return value
+
+
+CLIENT_ID = config_value("PIXIV_CLIENT_ID", DEFAULT_CLIENT_ID)
+CLIENT_SECRET = config_value("PIXIV_CLIENT_SECRET", DEFAULT_CLIENT_SECRET)
 
 
 def s256(data: bytes) -> str:

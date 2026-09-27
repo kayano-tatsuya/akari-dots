@@ -76,8 +76,8 @@ mkdir -p "$STATE_DIR"
 # --- Pixiv constants (same public app credentials as pixiv-auth.py) ---
 PIXIV_OAUTH="https://oauth.secure.pixiv.net/auth/token"
 PIXIV_API="https://app-api.pixiv.net/v1"
-CLIENT_ID="MOBrBDS8blbauoSck0ZfDbtuzpyT"
-CLIENT_SECRET="lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
+DEFAULT_CLIENT_ID="MOBrBDS8blbauoSck0ZfDbtuzpyT"
+DEFAULT_CLIENT_SECRET="lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
 USER_AGENT="PixivAndroidApp/5.0.234 (Android 11; Pixel 5)"
 REFERER="https://www.pixiv.net/"
 
@@ -94,6 +94,12 @@ PIXIV_WALLPAPER_TAG="false"
 PIXIV_WALLPAPER_TAG_VALUE="壁紙"
 PIXIV_CONFIG="$XDG_CONFIG_HOME/pixiv/config"
 [ -f "$PIXIV_CONFIG" ] && . "$PIXIV_CONFIG"
+
+# Credentials: the config file wins, the built-in pair is the fallback. :- treats
+# a blank override as unset, so a half-edited line can't post an empty client_id.
+# Same key names and same precedence as pixiv-auth.py and OnlineWallpapers.qml.
+CLIENT_ID="${PIXIV_CLIENT_ID:-$DEFAULT_CLIENT_ID}"
+CLIENT_SECRET="${PIXIV_CLIENT_SECRET:-$DEFAULT_CLIENT_SECRET}"
 
 # for_ios excludes R-18 from the API results, for_android includes it.
 PIXIV_FILTER="for_ios"

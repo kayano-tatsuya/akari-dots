@@ -71,6 +71,17 @@ Singleton {
     // The read is async, so the grid must not report "no token" before it has run.
     property bool   _pixivReadDone: false
 
+    // Pixiv app credentials, in the same shape as the other providers' keys. These
+    // are the public for_android client pair, not a user secret, so unlike the
+    // wallhaven/pexels/unsplash keys they do not come from the keyring.
+    readonly property string _pixivClientIdDefault:     Config.options.wallpaperSelector.pixivClientId     ?? ""
+    readonly property string _pixivClientSecretDefault: Config.options.wallpaperSelector.pixivClientSecret ?? ""
+    // Resolved after the read: the config file may override the pair, and a missing
+    // or blank value falls back to the constants above, so the tab cannot end up
+    // exchanging with an empty client_id because of a typo in an override.
+    property string _pixivClientId:     _pixivClientIdDefault
+    property string _pixivClientSecret: _pixivClientSecretDefault
+
     readonly property bool pixivHasToken: _pixivRefreshToken.length > 0
     // What the grid should treat as "unconfigured": only once the read has
     // actually completed, otherwise the notice flashes on every open.
@@ -96,6 +107,14 @@ Singleton {
         while ((match = re.exec(text)) !== null) last = match[1];
         if (last === null) return fallback;
         return last.trim().replace(/^["']/, "").replace(/["']$/, "");
+    }
+
+    // An override that is present but blank has to fall back too, not just a
+    // missing one: `PIXIV_CLIENT_ID=""` matches the regex and would otherwise
+    // defeat the default and post an empty client_id to pixiv.
+    function _pixivOverride(key, fallback) {
+        const value = _pixivConfigValue(key, "");
+        return value.length > 0 ? value : fallback;
     }
 
     // ─── Read the pixiv config dir ───
@@ -143,6 +162,8 @@ Singleton {
         root._pixivConfigText = raw.slice(ci + root._pixivCfgMark.length);
         root._pixivAllowNsfw = _pixivConfigValue("PIXIV_ALLOW_NSFW", "false") === "true";
         root._pixivDefaultTags = _pixivConfigValue("PIXIV_TAGS", "");
+        root._pixivClientId = _pixivOverride("PIXIV_CLIENT_ID", root._pixivClientIdDefault);
+        root._pixivClientSecret = _pixivOverride("PIXIV_CLIENT_SECRET", root._pixivClientSecretDefault);
         root._pixivReadDone = true;
     }
 
@@ -384,8 +405,17 @@ Singleton {
     }
 
     function _exchangePixivToken(onSuccess) {
-        const clientId     = Config.options.wallpaperSelector.pixivClientId ?? "";
-        const clientSecret = Config.options.wallpaperSelector.pixivClientSecret ?? "";
+        const clientId     = root._pixivClientId;
+        const clientSecret = root._pixivClientSecret;
+        // The fallback chain should make this unreachable, but an empty client pair
+        // would otherwise post to pixiv and surface as a generic exchange error with
+        // no hint that the cause is a missing credential.
+        if (clientId.length === 0 || clientSecret.length === 0) {
+            root.loading = false;
+            root.fetchError(Translation.tr("Pixiv: no app credentials. Set PIXIV_CLIENT_ID and PIXIV_CLIENT_SECRET in ~/.config/pixiv/config, or restore the defaults in Config.qml."));
+            _drainQueuedSearch();
+            return;
+        }
         authProc.onSuccess = onSuccess;
         authProc.command = ["curl", "-s", "--connect-timeout", "10", "--max-time", "30",
             "-X", "POST", root.pixivTokenUrl,
