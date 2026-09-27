@@ -66,12 +66,36 @@ settings page plus a family of standalone scripts it shells out to.
 | `scripts/colors/save_current_wallpaper.sh` | **New.** Backs the Save wallpaper button. |
 | `scripts/colors/switchwall.sh` | Thumbnail refresh on wallpaper switch. |
 
-`random_osu_wall.sh` was removed on 2026-09-27. It called
-`osu.ppy.sh/api/v2/seasonal-backgrounds`, which no longer exists, and nothing
-invoked it — no QML, no keybind. The `"Random • osu! seasonal"` strings still
-sitting in `translations/*.json` are orphaned upstream catalogue entries with
-no caller; they were left alone because `en_US.json` is the translation
-source and pruning it is a separate, tool-mediated job.
+### `random_osu_wall.sh`, removed
+
+Called `osu.ppy.sh/api/v2/seasonal-backgrounds`, part of the osu! v2 API that no
+longer exists, so the script could only fail. Nothing invoked it: no QML and no
+JS in the tree mentions `osu` or `seasonal`, and no keybind or settings entry
+calls it by name.
+
+Its `"Random • osu! seasonal"` strings were orphaned catalogue entries with no
+caller, and were pruned from all 10 locales that had them (18 lines, deletions
+only). They were removed line-by-line rather than by re-serialising the JSON:
+`json.dump` reformats 9 of the 14 files, because they do not share a separator
+style, and a bulk rewrite would have buried an 18-line deletion inside a
+whole-tree reformat.
+
+### Where the Pixiv app credentials live
+
+The `for_android` client pair is hardcoded in `Config.qml` as the built-in
+default, and `PIXIV_CLIENT_ID` / `PIXIV_CLIENT_SECRET` in
+`~/.config/pixiv/config` override it. `pixiv_nsfw.sh` and `pixiv_tag.sh` already
+described that file as the single source of truth for Pixiv settings; it now
+actually is one, for the credentials too.
+
+The default is kept deliberately. The QML side already held the raw config text
+in memory from the existing refresh-token read, so the override is two extra
+lookups against a string already loaded — no new I/O and no new async in a
+token-exchange path that has already produced two subtle bugs. Without the
+default, a missing or mistyped override would post an empty `client_id` and
+surface as Pixiv's generic error with no hint at the cause. An override that is
+present but *blank* counts as absent in all three readers, because it matches
+the key regex and would otherwise defeat the fallback.
 
 ## 2. Wallpaper picker repairs
 
