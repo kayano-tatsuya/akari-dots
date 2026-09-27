@@ -62,9 +62,16 @@ settings page plus a family of standalone scripts it shells out to.
 | `scripts/colors/random/pixiv-auth.py` | **New.** Mints and stores a Pixiv refresh token. Writes `~/.config/pixiv/refresh-token` at mode 600. Sole supported writer of that file. |
 | `scripts/colors/random/random_pixiv_wall.sh` | **New.** Random Pixiv pull: auth, tag filters, NSFW gating, Homework routing. |
 | `scripts/colors/random/pixiv_nsfw.sh`, `pixiv_tag.sh` | **New.** Toggles the R-18 flag and the wallpaper-tag flag, read by the script above. |
-| `scripts/colors/random/random_konachan_wall.sh`, `random_osu_wall.sh` | Refreshes added to stop the random pick repeating stale previews. |
+| `scripts/colors/random/random_konachan_wall.sh` | Refresh added to stop the random pick repeating stale previews. |
 | `scripts/colors/save_current_wallpaper.sh` | **New.** Backs the Save wallpaper button. |
 | `scripts/colors/switchwall.sh` | Thumbnail refresh on wallpaper switch. |
+
+`random_osu_wall.sh` was removed on 2026-09-27. It called
+`osu.ppy.sh/api/v2/seasonal-backgrounds`, which no longer exists, and nothing
+invoked it — no QML, no keybind. The `"Random • osu! seasonal"` strings still
+sitting in `translations/*.json` are orphaned upstream catalogue entries with
+no caller; they were left alone because `en_US.json` is the translation
+source and pruning it is a separate, tool-mediated job.
 
 ## 2. Wallpaper picker repairs
 
