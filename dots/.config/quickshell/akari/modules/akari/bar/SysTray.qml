@@ -9,7 +9,7 @@ import qs.modules.common.widgets
 
 Item {
     id: root
-    property bool vertical: false
+    property bool vertical: Config.options.bar.vertical
     property bool invertSide: false
     property bool trayOverflowOpen: false
     property bool showSeparator: true

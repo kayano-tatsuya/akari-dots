@@ -53,7 +53,6 @@ settings page plus a family of standalone scripts it shells out to.
 | `modules/akari/settings/Settings.qml`, `GlobalStates.qml` | Makes the save dialog open **modally over** the settings window instead of behind it, and stops the settings dialog from blocking. |
 | `modules/akari/sidebarRight/SidebarRightContent.qml` | Surfaces Save wallpaper in the sidebar; fixes a stale quick-toggle edit tooltip. |
 | `modules/akari/wallpaperSelector/WallpaperSelectorContent.qml` | **Homework folder** auto-creation and routing of R-18 Pixiv pulls into it, so adult content is never dropped into the general wallpaper pool. |
-| `modules/akari/bar/BatteryIndicator.qml` | Ports the stock end-4 vertical battery design (capsule, level icon, rounded label) into the pctrade shell. |
 
 ### Scripts the settings page invokes
 
@@ -114,11 +113,12 @@ alongside the subfolder preview fix.
 
 ## 3. Shell chrome and services
 
-Six live defects fixed in the bar, overview, vertical bar and services.
+Seven live defects fixed in the bar, overview, vertical bar and services.
 
 | File | Edit |
 | --- | --- |
 | `modules/akari/bar/BarContent.qml`, `modules/akari/verticalBar/VerticalBarContent.qml`, `modules/akari/overview/OverviewWindow.qml` | Layout and behaviour repairs inherited from `end4-pC`. |
+| `modules/akari/bar/BatteryIndicator.qml`, `Resource.qml`, `SysTray.qml`, `modules/common/widgets/ClippedProgressBar.qml` | All three bar widgets read `bar.vertical` from the config instead of a hardcoded `false`: `VerticalBarContent` stamps `vertical = true` onto loaded widgets but `BarContent` does not, so the hardcoded default was the only thing orienting them in a horizontal bar. `BatteryIndicator` additionally drops the orientation-dependent shape — a horizontal bar used to fall back to `radius: 6` with the Android-battery nub showing, so the capsule is now used in both orientations (horizontal slot widened 30→44px) and the horizontal reading gained the same level glyph the vertical one already had. `ClippedProgressBar` shed the fork-only `showTip` tip machinery as dead code. |
 | `services/Notifications.qml`, `services/Updates.qml` | Service-level repairs. |
 
 ## 4. Hyprland

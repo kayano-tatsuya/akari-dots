@@ -17,9 +17,6 @@ ProgressBar {
     property color trackColor: ColorUtils.transparentize(highlightColor, 0.5) ?? "#F1D3F9"
     property alias radius: contentItem.radius
     property string text
-    property bool showTip: true 
-    property real tipWidth: 2   
-    property real tipHeight: 10  
     
     default property Item textMask: Item {
         width: valueBarWidth
@@ -39,7 +36,7 @@ ProgressBar {
     
     background: Item {
         implicitHeight: valueBarHeight
-        implicitWidth: valueBarWidth + (root.showTip ? root.tipWidth + 1 : 0)
+        implicitWidth: valueBarWidth
     }
     
     contentItem: Item {
@@ -91,28 +88,6 @@ ProgressBar {
                 color: root.highlightColor
             }
         }
-        
-        // Tiny box
-        Rectangle {
-            id: batteryTip
-            visible: root.showTip
-            anchors {
-                left: mainRect.right
-                leftMargin: 1
-                verticalCenter: parent.verticalCenter
-            }
-            width: root.tipWidth
-            height: root.tipHeight
-            radius: 1
-            color: root.trackColor
-            
-            Rectangle {
-                anchors.fill: parent
-                radius: parent.radius
-                color: root.highlightColor
-                visible: root.visualPosition > 0.95 
-            }
-        }
     }
     
     OpacityMask {
@@ -127,17 +102,6 @@ ProgressBar {
                 width: root.valueBarWidth
                 height: root.valueBarHeight
                 radius: contentItem.radius
-            }
-            Rectangle {
-                visible: root.showTip
-                anchors {
-                    left: parent.left
-                    leftMargin: root.valueBarWidth + 1
-                    verticalCenter: parent.verticalCenter
-                }
-                width: root.tipWidth
-                height: root.tipHeight
-                radius: 1
             }
         }
     }

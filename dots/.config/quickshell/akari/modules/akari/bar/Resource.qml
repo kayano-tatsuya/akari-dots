@@ -8,7 +8,7 @@ Item {
     id: root
     required property string iconName
     required property double percentage
-    property bool vertical: false
+    property bool vertical: Config.options.bar.vertical
     property int warningThreshold: 100
     property bool shown: true
     clip: !vertical

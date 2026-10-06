@@ -6,7 +6,11 @@ import QtQuick.Layouts
 
 MouseArea {
     id: root
-    property bool vertical: false
+    // VerticalBarContent stamps vertical = true onto loaded widgets, but
+    // BarContent never does, so this hardcoded default was the only thing
+    // orienting the indicator in a horizontal bar. Read the config like
+    // SystemIcons/Workspaces/Divisor/... do so both bar flavours agree.
+    property bool vertical: Config.options.bar.vertical
     property bool borderless: Config.options.bar.borderless
     property bool isMaterial: Config.options.bar.cornerStyle === 3
     readonly property var chargeState: Battery.chargeState
@@ -39,10 +43,14 @@ MouseArea {
         anchors.centerIn: parent
         value: percentage
         vertical: root.vertical
-        radius: root.vertical ? 9999 : 6
-        showTip: !root.vertical
-        valueBarWidth: root.vertical ? 20 : 30
-        valueBarHeight: root.vertical ? 36 : 18
+        // Capsule in both orientations. In a horizontal bar this widget used
+        // to fall back to a 6px radius with the Android-battery nub, because
+        // the vertical branch (radius 9999, no tip) only kicked in when the
+        // outer widget got its `vertical` set -- something BarContent never
+        // did.
+        radius: 9999
+        valueBarWidth: root.vertical ? 20 : 44
+        valueBarHeight: root.vertical ? 36 : 20
         highlightColor: (isLow && !isCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
         Item {
             anchors.centerIn: parent
@@ -55,22 +63,24 @@ MouseArea {
                 visible: active
                 anchors.centerIn: parent
                 sourceComponent: RowLayout {
-                    spacing: 0
+                    spacing: 2
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.topMargin: 2
-                        Layout.leftMargin: -2
-                        Layout.rightMargin: -2
                         fill: 1
-                        text: "bolt"
-                        iconSize: Appearance.font.pixelSize.smaller
-                        visible: root.isCharging && root.percentage < 1
+                        text: {
+                            if (batteryProgress.value == 1) return "check";
+                            if (root.isCharging) return "bolt";
+                            return root.batteryLevelIcon();
+                        }
+                        iconSize: Appearance.font.pixelSize.normal
                     }
                     StyledText {
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.topMargin: 2
                         font: batteryProgress.font
                         text: batteryProgress.text
+                        // a 3-digit "100" plus the level glyph crams against the
+                        // capsule's ends; the vertical branch already hides it
+                        visible: text.length <= 2
                     }
                 }
             }
