@@ -28,16 +28,17 @@ with a snapshot of pctrade's `end4-pC` (`8efd7b37`, snapshot `0ff392bc`,
 706 files, +100,742 lines). It was then renamed to `akari` (`769958dd`,
 712 files, +191/−182 — mechanical path and identifier churn only).
 
-So for anything under `dots/.config/quickshell/akari/`, the meaningful baseline
-is **`0ff392bc`**, not `upstream/main`. Diffing the akari tree against
+So for anything under `dots/.config/quickshell/shizuka/`, the meaningful baseline
+is **`0ff392bc`**, not `upstream/main`. Diffing the shizuka tree against
 `upstream/main` shows +102,527 lines across 713 files, which is almost entirely
-the vendored snapshot and the rename, not our work.
+the vendored snapshot and the akari→shizuka rename, not our work.
 
-Current rename map, applied wholesale in `769958dd`:
+Current rename map, applied wholesale in `769958dd` (again wholesale in the
+current `shizuka` rename):
 
 ```
-dots/.config/quickshell/end4-pC/  ->  dots/.config/quickshell/akari/
-  modules/ii/                     ->  modules/akari/
+dots/.config/quickshell/end4-pC/  ->  dots/.config/quickshell/akari/  ->  dots/.config/quickshell/shizuka/
+  modules/ii/                     ->  modules/akari/                     ->  modules/shizuka/
   modules/common/                 ->  modules/common/   (unchanged)
 ```
 
@@ -48,11 +49,11 @@ settings page plus a family of standalone scripts it shells out to.
 
 | File | Edit |
 | --- | --- |
-| `modules/akari/settings/pages/BackgroundConfig.qml` | Source of most of the below. Adds the **Random: Konachan** and **Random: Pixiv** buttons, the **Save wallpaper** button, the Pixiv **R-18** toggle, and the wallpaper-tag switch; reorders the page so Save sits above Konachan and the Pixiv toggles sit in a labelled section. |
+| `modules/shizuka/settings/pages/BackgroundConfig.qml` | Source of most of the below. Adds the **Random: Konachan** and **Random: Pixiv** buttons, the **Save wallpaper** button, the Pixiv **R-18** toggle, and the wallpaper-tag switch; reorders the page so Save sits above Konachan and the Pixiv toggles sit in a labelled section. |
 | `modules/common/widgets/SaveWallpaperDialog.qml` | **New.** Name-prompt dialog for saving the current wallpaper. |
-| `modules/akari/settings/Settings.qml`, `GlobalStates.qml` | Makes the save dialog open **modally over** the settings window instead of behind it, and stops the settings dialog from blocking. |
-| `modules/akari/sidebarRight/SidebarRightContent.qml` | Surfaces Save wallpaper in the sidebar; fixes a stale quick-toggle edit tooltip. |
-| `modules/akari/wallpaperSelector/WallpaperSelectorContent.qml` | **Homework folder** auto-creation and routing of R-18 Pixiv pulls into it, so adult content is never dropped into the general wallpaper pool. |
+| `modules/shizuka/settings/Settings.qml`, `GlobalStates.qml` | Makes the save dialog open **modally over** the settings window instead of behind it, and stops the settings dialog from blocking. |
+| `modules/shizuka/sidebarRight/SidebarRightContent.qml` | Surfaces Save wallpaper in the sidebar; fixes a stale quick-toggle edit tooltip. |
+| `modules/shizuka/wallpaperSelector/WallpaperSelectorContent.qml` | **Homework folder** auto-creation and routing of R-18 Pixiv pulls into it, so adult content is never dropped into the general wallpaper pool. |
 
 ### Scripts the settings page invokes
 
@@ -102,8 +103,8 @@ Defects inherited from `end4-pC` and fixed in place.
 
 | File | Edit |
 | --- | --- |
-| `modules/akari/wallpaperSelector/LocalWallpaperGrid.qml`, `services/Wallpapers.qml` | Repairs **folder navigation** in the local grid. |
-| `modules/akari/wallpaperSelector/LocalWallpaperGrid.qml`, `WallpaperSelectorContent.qml`, `services/Wallpapers.qml` | Generates previews for images in **subfolders**, not just the wallpaper root. |
+| `modules/shizuka/wallpaperSelector/LocalWallpaperGrid.qml`, `services/Wallpapers.qml` | Repairs **folder navigation** in the local grid. |
+| `modules/shizuka/wallpaperSelector/LocalWallpaperGrid.qml`, `WallpaperSelectorContent.qml`, `services/Wallpapers.qml` | Generates previews for images in **subfolders**, not just the wallpaper root. |
 | `modules/common/widgets/Toolbar.qml`, `WallpaperSelectorContent.qml` | Reaches the search field **through the toolbar Loader**, which the inherited code did not do, so the field could not be focused at all. |
 | `WallpaperSelectorContent.qml` | Reveals the **search bar when you start typing** into it. |
 
@@ -117,8 +118,8 @@ Seven live defects fixed in the bar, overview, vertical bar and services.
 
 | File | Edit |
 | --- | --- |
-| `modules/akari/bar/BarContent.qml`, `modules/akari/verticalBar/VerticalBarContent.qml`, `modules/akari/overview/OverviewWindow.qml` | Layout and behaviour repairs inherited from `end4-pC`. |
-| `modules/akari/bar/BatteryIndicator.qml`, `Resource.qml`, `SysTray.qml`, `modules/common/widgets/ClippedProgressBar.qml` | All three bar widgets read `bar.vertical` from the config instead of a hardcoded `false`: `VerticalBarContent` stamps `vertical = true` onto loaded widgets but `BarContent` does not, so the hardcoded default was the only thing orienting them in a horizontal bar. `BatteryIndicator` additionally drops the orientation-dependent shape — a horizontal bar used to fall back to `radius: 6` with the Android-battery nub showing, so the capsule is now used in both orientations (horizontal slot widened 30→44px) and the horizontal reading gained the same level glyph the vertical one already had. `ClippedProgressBar` shed the fork-only `showTip` tip machinery as dead code. |
+| `modules/shizuka/bar/BarContent.qml`, `modules/shizuka/verticalBar/VerticalBarContent.qml`, `modules/shizuka/overview/OverviewWindow.qml` | Layout and behaviour repairs inherited from `end4-pC`. |
+| `modules/shizuka/bar/BatteryIndicator.qml`, `Resource.qml`, `SysTray.qml`, `modules/common/widgets/ClippedProgressBar.qml` | All three bar widgets read `bar.vertical` from the config instead of a hardcoded `false`: `VerticalBarContent` stamps `vertical = true` onto loaded widgets but `BarContent` does not, so the hardcoded default was the only thing orienting them in a horizontal bar. `BatteryIndicator` additionally drops the orientation-dependent shape — a horizontal bar used to fall back to `radius: 6` with the Android-battery nub showing, so the capsule is now used in both orientations (horizontal slot widened 30→44px) and the horizontal reading gained the same level glyph the vertical one already had. `ClippedProgressBar` shed the fork-only `showTip` tip machinery as dead code. |
 | `services/Notifications.qml`, `services/Updates.qml` | Service-level repairs. |
 
 ## 4. Hyprland
@@ -164,7 +165,7 @@ grid, download, apply.
 | File | Edit |
 | --- | --- |
 | `services/OnlineWallpapers.qml` | All pixiv logic: token exchange and reuse, search, paging, the `full` URL fallback chain, thumbnail caching, and the search queue. |
-| `modules/akari/wallpaperSelector/OnlineWallpaperGrid.qml` | Pixiv in the provider combo; the `Referer` header on download; **errors now surface** in a banner instead of only in the empty state, which previously hid every failure after the first page. |
+| `modules/shizuka/wallpaperSelector/OnlineWallpaperGrid.qml` | Pixiv in the provider combo; the `Referer` header on download; **errors now surface** in a banner instead of only in the empty state, which previously hid every failure after the first page. |
 | `WallpaperSelectorContent.qml` | Registers pixiv as a provider, excludes it from the resolution toolbar. |
 | `services/LauncherSearch.qml` | Adds `/pixiv YOUR_REFRESH_TOKEN`, alongside the existing `/unsplash`, `/wallhaven`, `/pexels`. |
 | `modules/common/Config.qml` | Pixiv client constants, `pixivMaxPages`, `pixivPageSize`. |

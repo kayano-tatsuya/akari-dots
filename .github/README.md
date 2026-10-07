@@ -1,6 +1,6 @@
 <div align="center">
     <h1>akari-dots</h1>
-    <h3>Hyprland dotfiles, running the <b>akari</b> Quickshell shell</h3>
+    <h3>Hyprland dotfiles, running the <b>shizuka</b> Quickshell shell</h3>
 </div>
 
 <div align="center">
@@ -13,7 +13,7 @@
 
 ## What this is
 
-A Hyprland dotfiles config whose shell is **akari** — a Quickshell/QML desktop shell
+A Hyprland dotfiles config whose shell is **shizuka** — a Quickshell/QML desktop shell
 providing the bar, wallpaper selector, sidebar, notifications, lock screen, overlays
 and a large pile of settings.
 
@@ -30,7 +30,7 @@ cd akari-dots
 ```
 
 The installer refuses to run as root. It symlinks `dots/` and `dots-extra/` into
-`~/.config` and installs the shell to `~/.config/quickshell/akari`.
+`~/.config` and installs the shell to `~/.config/quickshell/shizuka`.
 
 To uninstall, remove the symlinks and the shell directory.
 
@@ -38,19 +38,19 @@ To uninstall, remove the symlinks and the shell directory.
 
 | Path | Purpose |
 |---|---|
-| `dots/.config/quickshell/akari/` | The akari shell (QML). This is the bulk of the repo. |
+| `dots/.config/quickshell/shizuka/` | The shizuka shell (QML). This is the bulk of the repo. |
 | `dots/.config/hypr/hyprland/` | Hyprland config: `variables.lua`, `execs.lua`, `keybinds.lua` |
 | `dots-extra/` | Optional per-distro extras (e.g. Fedora) |
 | `sdata/` | Installer logic and packaging recipes |
 | `setup` | Installer entrypoint |
 
-Shell settings and user data live outside the repo, in `~/.config/akari/`
+Shell settings and user data live outside the repo, in `~/.config/shizuka/`
 (`config.json`, `presets/`, `actions/`). The repo holds defaults only.
 
 ## Notes on this fork
 
 - The shell config directory, the QML module namespace, and the launch variable
-  were renamed from their upstream names to **akari**, so the config does not
+  were renamed from their upstream names to **shizuka**, so the config does not
   advertise itself as a fork. Where behaviour depended on the old names, it was
   updated: the `panelFamily` setting, the `qs -c` re-activation path, and the
   `QUICKSHELL_CONFIG_NAME` used by the wallpaper and theme scripts.
@@ -58,7 +58,7 @@ Shell settings and user data live outside the repo, in `~/.config/akari/`
   Gemini API key is filed under the original application attribute; renaming it
   would orphan the stored secret. Only the user-visible label was rebranded.
 - The Settings → About "Update" button clones this repository and extracts
-  `dots/.config/quickshell/akari/`, so it updates the shell in place.
+  `dots/.config/quickshell/shizuka/`, so it updates the shell in place.
 
 ## Credits
 
