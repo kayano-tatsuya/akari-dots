@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>akari-dots</h1>
+    <h1>shizuka</h1>
     <h3>Hyprland dotfiles, running the <b>shizuka</b> Quickshell shell</h3>
 </div>
 
