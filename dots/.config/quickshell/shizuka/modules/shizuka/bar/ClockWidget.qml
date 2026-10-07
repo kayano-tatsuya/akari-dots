@@ -54,7 +54,7 @@ BarWidgetSwitcher {
                 Layout.bottomMargin: 5
                 font.pixelSize: Appearance.font.pixelSize.smallest
                 color: Appearance.colors.colOnLayer1
-                text: DateTime.shortDate
+                text: DateTime.jpLocale.toString(root.today, "M月d日 (ddd)")
             }
         }
     }

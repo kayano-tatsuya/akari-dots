@@ -19,11 +19,17 @@ Singleton {
         }
     }
 
+    // toString returns a locale's weekday/era names; override by key, not by
+    // mutating the global locale, so any other locale usage stays intact.
+    property var jpLocale: Qt.locale("ja_JP")
     property string time: Qt.locale().toString(clock.date, Config.options?.time.format ?? "hh:mm")
     property string shortDate: Qt.locale().toString(clock.date, Config.options?.time.shortDateFormat ?? "dd/MM")
     property string date: Qt.locale().toString(clock.date, Config.options?.time.dateWithYearFormat ?? "dd/MM/yyyy")
-    property string longDate: Qt.locale().toString(clock.date, Config.options?.time.dateFormat ?? "dddd, dd/MM")
-    property string collapsedCalendarFormat: Qt.locale().toString(clock.date, "dddd, MMMM dd")
+    // but longDate always shows a weekday, and we want Japanese day names
+    property string longDate: jpLocale.toString(clock.date, Config.options?.time.dateFormat ?? "ddd, dd/MM")
+    // likewise the calendar strip in the clock popup / sidebar uses the same
+    // format 'dddd, MMMM dd' for the weekday
+    property string collapsedCalendarFormat: jpLocale.toString(clock.date, "dddd, MMMM dd")
     readonly property bool use12HourFormat: (Config.options?.time.format ?? "hh:mm").toLowerCase().indexOf("ap") !== -1
     readonly property int hour24: clock.date.getHours()
     readonly property int hour12: (hour24 % 12 === 0) ? 12 : hour24 % 12
