@@ -5,9 +5,9 @@
 
 <div align="center">
 
-![last-commit](https://img.shields.io/github/last-commit/kayano-tatsuya/akari-dots?style=for-the-badge&color=8ad7eb&logo=git&logoColor=D9E0EE&labelColor=1E202B)
-![stars](https://img.shields.io/github/stars/kayano-tatsuya/akari-dots?style=for-the-badge&logo=andela&color=86dbd7&logoColor=D9E0EE&labelColor=1E202B)
-![repo-size](https://img.shields.io/github/repo-size/kayano-tatsuya/akari-dots?color=86dbce&label=SIZE&logo=protondrive&style=for-the-badge&logoColor=D9E0EE&labelColor=1E202B)
+![last-commit](https://img.shields.io/github/last-commit/kayano-tatsuya/shizuka?style=for-the-badge&color=8ad7eb&logo=git&logoColor=D9E0EE&labelColor=1E202B)
+![stars](https://img.shields.io/github/stars/kayano-tatsuya/shizuka?style=for-the-badge&logo=andela&color=86dbd7&logoColor=D9E0EE&labelColor=1E202B)
+![repo-size](https://img.shields.io/github/repo-size/kayano-tatsuya/shizuka?color=86dbce&label=SIZE&logo=protondrive&style=for-the-badge&logoColor=D9E0EE&labelColor=1E202B)
 
 </div>
 
@@ -24,8 +24,8 @@ and a large pile of settings.
 ## Install
 
 ```bash
-git clone https://github.com/kayano-tatsuya/akari-dots.git
-cd akari-dots
+git clone https://github.com/kayano-tatsuya/shizuka.git
+cd shizuka
 ./setup install
 ```
 

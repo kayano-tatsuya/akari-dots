@@ -17,7 +17,7 @@ on which tree you are looking at. Getting this wrong is how you end up
 | --- | --- | --- |
 | `upstream` | `end-4/dots-hyprland` @ `2f0c8bf4` | Stock. Baseline for Hyprland, installer, docs. |
 | `pctrade` | `pctrade/end4-pC` | The shell we actually forked. Contains our commits. |
-| `origin` | `kayano-tatsuya/akari-dots` | This repo. |
+| `origin` | `kayano-tatsuya/shizuka` | This repo. |
 
 **Hyprland, installer and docs** are diffed against `upstream/main`. All 32
 commits sit on top of it.
@@ -149,7 +149,7 @@ below.
 | File | Edit |
 | --- | --- |
 | `AGENTS.md` | Working rules for this repo. Read before changing anything. |
-| `.github/README.md` | Replaced the inherited README with an akari-dots one. |
+| `.github/README.md` | Replaced the inherited README with a shizuka one. |
 | `hypr/custom/README.md` | Explains the comments-only template convention. |
 | `.gitignore` | Adds `config.json`, the locally-owned akari config holding API keys. |
 
